@@ -1,0 +1,36 @@
+# Query: medusa store
+# ContextLines: 1
+
+7 results - 5 files
+
+storefront/src/app/[countryCode]/(main)/account/@dashboard/profile/page.tsx:
+  14    title: "Profile",
+  15:   description: "View and edit your Gmorkl Store profile.",
+  16  }
+
+storefront/src/app/[countryCode]/(main)/collections/[handle]/page.tsx:
+  61    const metadata = {
+  62:     title: `${collection.title} | Gmorkl Store`,
+  63      description: `${collection.title} collection`,
+
+storefront/src/modules/account/components/register/index.tsx:
+  24        <h1 className="text-large-semi uppercase mb-6">
+  25:         Become a Gmorkl Store Member
+  26        </h1>
+  27        <p className="text-center text-base-regular text-ui-fg-base mb-4">
+  28:         Create your Gmorkl Store Member profile, and get access to an enhanced
+  29          shopping experience.
+
+  72          <span className="text-center text-ui-fg-base text-small-regular mt-6">
+  73:           By creating an account, you agree to Gmorkl Store&apos;s{" "}
+  74            <LocalizedClientLink
+
+storefront/src/modules/layout/components/side-menu/index.tsx:
+  93                        <Text className="flex justify-between txt-compact-small">
+  94:                         © {new Date().getFullYear()} Gmorkl Store. All rights
+  95                          reserved.
+
+storefront/src/modules/layout/templates/nav/index.tsx:
+  27              >
+  28:               Gmorkl Store
+  29              </LocalizedClientLink>
