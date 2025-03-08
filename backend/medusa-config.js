@@ -24,7 +24,7 @@ import {
   MEILISEARCH_ADMIN_KEY
 } from 'lib/constants';
 
-// Загружаем переменные окружения
+// 🔹 Загружаем переменные окружения
 loadEnv(process.env.NODE_ENV, process.cwd());
 
 const medusaConfig = {
@@ -87,7 +87,7 @@ const medusaConfig = {
         }
       }
     }] : []),
-    // 🔹 Настраиваем Email-уведомления с Resend и SendGrid
+    // 🔹 Email-уведомления с Resend и SendGrid
     {
       key: Modules.NOTIFICATION,
       resolve: '@medusajs/notification',
@@ -103,8 +103,8 @@ const medusaConfig = {
             }
           }] : []),
           ...(RESEND_API_KEY && RESEND_FROM_EMAIL ? [{
-            resolve: './src/modules/email-notifications/resend-provider', // Исправленный путь
-            id: 'resend',
+            resolve: './src/modules/email-notifications/services/resend-provider', // ✅ Исправленный путь
+            id: 'resend', // ✅ Важно, чтобы идентификатор был 'resend'
             options: {
               channels: ['email'],
               api_key: RESEND_API_KEY,
@@ -153,7 +153,7 @@ const medusaConfig = {
   ]
 };
 
-// Логируем конфигурацию для проверки
-console.log(JSON.stringify(medusaConfig, null, 2));
+// 🔥 Отладка: Проверяем, загрузился ли `resend`
+console.log("🔍 Loaded notification providers:", JSON.stringify(medusaConfig.modules.find(m => m.key === Modules.NOTIFICATION), null, 2));
 
 export default defineConfig(medusaConfig);
