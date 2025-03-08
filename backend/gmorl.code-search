@@ -1,0 +1,19 @@
+# Query: gmorl
+# ContextLines: 1
+
+3 results - 3 files
+
+storefront/src/app/[countryCode]/(checkout)/layout.tsx:
+  31            >
+  32:             Gmorkl Store
+  33            </LocalizedClientLink>
+
+storefront/src/app/[countryCode]/(main)/account/@login/page.tsx:
+  6    title: "Sign in",
+  7:   description: "Sign in to your Gmorkl Store account.",
+  8  }
+
+storefront/src/app/[countryCode]/(main)/categories/[...category]/page.tsx:
+  59      return {
+  60:       title: `${title} | Gmorkl Store`,
+  61        description,
