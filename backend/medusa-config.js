@@ -24,6 +24,7 @@ import {
   MEILISEARCH_ADMIN_KEY
 } from 'lib/constants';
 
+// Загружаем переменные окружения
 loadEnv(process.env.NODE_ENV, process.cwd());
 
 const medusaConfig = {
@@ -57,7 +58,7 @@ const medusaConfig = {
               endPoint: MINIO_ENDPOINT,
               accessKey: MINIO_ACCESS_KEY,
               secretKey: MINIO_SECRET_KEY,
-              bucket: MINIO_BUCKET // Optional, default: medusa-media
+              bucket: MINIO_BUCKET // Опционально, по умолчанию: medusa-media
             }
           }] : [{
             resolve: '@medusajs/file-local',
@@ -101,7 +102,7 @@ const medusaConfig = {
             }
           }] : []),
           ...(RESEND_API_KEY && RESEND_FROM_EMAIL ? [{
-            resolve: './src/modules/email-notifications',
+            resolve: './src/modules/resend-email', // Изменено! Правильный путь к кастомному провайдеру
             id: 'resend',
             options: {
               channels: ['email'],
@@ -130,7 +131,7 @@ const medusaConfig = {
     }] : [])
   ],
   plugins: [
-  ...(MEILISEARCH_HOST && MEILISEARCH_ADMIN_KEY ? [{
+    ...(MEILISEARCH_HOST && MEILISEARCH_ADMIN_KEY ? [{
       resolve: '@rokmohar/medusa-plugin-meilisearch',
       options: {
         config: {
@@ -151,5 +152,7 @@ const medusaConfig = {
   ]
 };
 
+// Логируем конфигурацию для проверки
 console.log(JSON.stringify(medusaConfig, null, 2));
+
 export default defineConfig(medusaConfig);
