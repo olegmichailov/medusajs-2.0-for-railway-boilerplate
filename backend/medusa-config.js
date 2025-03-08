@@ -87,7 +87,8 @@ const medusaConfig = {
         }
       }
     }] : []),
-    ...(SENDGRID_API_KEY && SENDGRID_FROM_EMAIL || RESEND_API_KEY && RESEND_FROM_EMAIL ? [{
+    // 🔹 Настраиваем Email-уведомления с Resend и SendGrid
+    {
       key: Modules.NOTIFICATION,
       resolve: '@medusajs/notification',
       options: {
@@ -102,7 +103,7 @@ const medusaConfig = {
             }
           }] : []),
           ...(RESEND_API_KEY && RESEND_FROM_EMAIL ? [{
-            resolve: './src/modules/resend-email', // Изменено! Правильный путь к кастомному провайдеру
+            resolve: './src/modules/email-notifications/resend-provider', // Исправленный путь
             id: 'resend',
             options: {
               channels: ['email'],
@@ -112,7 +113,7 @@ const medusaConfig = {
           }] : []),
         ]
       }
-    }] : []),
+    },
     ...(STRIPE_API_KEY && STRIPE_WEBHOOK_SECRET ? [{
       key: Modules.PAYMENT,
       resolve: '@medusajs/payment',
