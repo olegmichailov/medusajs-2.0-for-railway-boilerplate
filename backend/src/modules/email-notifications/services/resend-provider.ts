@@ -1,26 +1,31 @@
 import { INotificationProvider } from '@medusajs/framework/types'
-import Resend from 'resend'
+import { Resend } from 'resend'
 
 class ResendProvider implements INotificationProvider {
-  static identifier = 'resend'
+  static identifier = 'resend' // 🔥 ДОЛЖЕН БЫТЬ 'resend'
 
-  constructor(private readonly options) {}
+  private resend: any
+  private from: string
 
-  async sendNotification(to: string, template: string, data: any) {
+  constructor(options) {
+    this.resend = new Resend(options.api_key)
+    this.from = options.from
+  }
+
+  async sendNotification(to: string, templateData: any) {
     try {
-      const resend = new Resend(this.options.api_key)
-
-      await resend.emails.send({
-        from: this.options.from,
+      const emailData = {
+        from: this.from,
         to,
-        subject: data.emailOptions?.subject || 'Your Order Confirmation',
-        html: `<h1>Thank you for your order!</h1><p>Your order ID: ${data.order.id}</p>`
-      })
+        subject: templateData.emailOptions?.subject || 'Notification',
+        html: templateData.html || `<p>${templateData.preview || 'No content'}</p>`,
+      }
 
-      console.log(`✅ Email sent to ${to} via Resend`)
+      const response = await this.resend.emails.send(emailData)
+      return response
     } catch (error) {
-      console.error('❌ Error sending email via Resend:', error)
-      throw error
+      console.error('Resend Error:', error)
+      throw new Error('Failed to send email via Resend')
     }
   }
 }
