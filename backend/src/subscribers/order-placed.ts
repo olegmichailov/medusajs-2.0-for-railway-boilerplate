@@ -9,18 +9,18 @@ export default async function orderPlacedHandler({
 }: SubscriberArgs<any>) {
   const notificationModuleService: INotificationModuleService = container.resolve(Modules.NOTIFICATION)
   const orderModuleService: IOrderModuleService = container.resolve(Modules.ORDER)
-  
+
   const order = await orderModuleService.retrieveOrder(data.id, { relations: ['items', 'summary', 'shipping_address'] })
   const shippingAddress = await (orderModuleService as any).orderAddressService_.retrieve(order.shipping_address.id)
 
   try {
     await notificationModuleService.createNotifications({
       to: order.email,
-      channel: 'email',
+      channel: 'resend', // ВАЖНО! Изменено с "email" на "resend"
       template: EmailTemplates.ORDER_PLACED,
       data: {
         emailOptions: {
-          replyTo: 'info@example.com',
+          replyTo: 'info@gmorkl.de', // Меняем на твой email
           subject: 'Your order has been placed'
         },
         order,
@@ -28,8 +28,9 @@ export default async function orderPlacedHandler({
         preview: 'Thank you for your order!'
       }
     })
+    console.log(`✅ Order confirmation email sent via Resend to: ${order.email}`)
   } catch (error) {
-    console.error('Error sending order confirmation notification:', error)
+    console.error('❌ Error sending order confirmation notification via Resend:', error)
   }
 }
 
