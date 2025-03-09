@@ -103,8 +103,8 @@ const medusaConfig = {
             }
           }] : []),
           ...(RESEND_API_KEY && RESEND_FROM_EMAIL ? [{
-            resolve: './src/modules/email-notifications/services/resend-provider', // ✅ Исправленный путь
-            id: 'resend', // ✅ Важно, чтобы идентификатор был 'resend'
+            resolve: './src/modules/email-notifications/services/resend', // ✅ Подключаем `resend.ts`
+            id: 'resend', // ✅ Должен называться `resend`, иначе Medusa не найдёт
             options: {
               channels: ['email'],
               api_key: RESEND_API_KEY,
@@ -153,7 +153,9 @@ const medusaConfig = {
   ]
 };
 
-// 🔥 Отладка: Проверяем, загрузился ли `resend`
-console.log("🔍 Loaded notification providers:", JSON.stringify(medusaConfig.modules.find(m => m.key === Modules.NOTIFICATION), null, 2));
+// 🔥 Отладка: Проверяем, загружены ли провайдеры
+console.log("🔍 Loaded notification providers:", JSON.stringify(
+  medusaConfig.modules.find(m => m.key === Modules.NOTIFICATION), null, 2
+));
 
 export default defineConfig(medusaConfig);
