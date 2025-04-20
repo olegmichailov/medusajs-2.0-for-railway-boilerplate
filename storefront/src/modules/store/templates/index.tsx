@@ -1,43 +1,37 @@
-import { Suspense, useState } from "react"
-import SkeletonProductGrid from "@modules/skeletons/templates/skeleton-product-grid"
-import RefinementList from "@modules/store/components/refinement-list"
-import PaginatedProducts from "./paginated-products"
-import { SortOptions } from "@modules/store/components/refinement-list/sort-products"
+import PaginatedProducts from "../components/paginated-products"
+import RefinementList from "../components/refinement-list"
+import { SortOptions } from "../components/refinement-list/sort-products"
 
-const StoreTemplate = ({
+export default function StoreTemplate({
   sortBy,
   page,
+  collectionId,
+  categoryId,
   countryCode,
 }: {
   sortBy?: SortOptions
-  page?: string
+  page: number
+  collectionId?: string
+  categoryId?: string
   countryCode: string
-}) => {
-  const pageNumber = page ? parseInt(page) : 1
-  const sort = sortBy || "created_at"
-
+}) {
   return (
-    <div className="content-container pt-8">
-      {/* Filters Button */}
-      <div className="flex justify-end mb-4">
-        <RefinementList sortBy={sort} />
-      </div>
+    <div className="flex flex-col sm:flex-row sm:items-start w-full gap-6 sm:gap-10">
+      <RefinementList sortBy={sortBy || "created_at"} />
 
-      {/* Title */}
-      <div className="mb-8 text-2xl-semi">
-        <h1 data-testid="store-page-title">All products</h1>
-      </div>
+      <div className="flex-1">
+        <h1 className="text-2xl font-sans tracking-widest uppercase mb-6 px-6 sm:px-0">
+          All Products
+        </h1>
 
-      {/* Products */}
-      <Suspense fallback={<SkeletonProductGrid />}>
         <PaginatedProducts
-          sortBy={sort}
-          page={pageNumber}
+          sortBy={sortBy}
+          page={page}
+          collectionId={collectionId}
+          categoryId={categoryId}
           countryCode={countryCode}
         />
-      </Suspense>
+      </div>
     </div>
   )
 }
-
-export default StoreTemplate
