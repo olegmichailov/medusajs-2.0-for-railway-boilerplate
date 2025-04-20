@@ -35,6 +35,7 @@ const RefinementList = ({ sortBy, "data-testid": dataTestId }: RefinementListPro
 
   const [categories, setCategories] = useState<Category[]>([])
   const [collections, setCollections] = useState<Collection[]>([])
+  const [isOpen, setIsOpen] = useState(false)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -65,60 +66,75 @@ const RefinementList = ({ sortBy, "data-testid": dataTestId }: RefinementListPro
   }
 
   return (
-    <div className="grid grid-cols-1 gap-8 py-4 mb-8 px-6 font-sans text-base tracking-wider md:grid-cols-3">
-      {/* Sort */}
-      <div className="flex flex-col gap-2 text-left">
-        <span className="text-sm uppercase text-gray-500">Sort by</span>
-        <div className="whitespace-nowrap">
-          <SortProducts
-            sortBy={sortBy}
-            setQueryParams={setQueryParams}
-            data-testid={dataTestId}
-          />
+    <div className="w-full">
+      {/* Toggle button only on mobile */}
+      <div className="md:hidden px-6 mb-4">
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="text-sm uppercase tracking-wider text-gray-800 border border-gray-300 rounded px-4 py-2 w-full bg-white"
+        >
+          {isOpen ? "HIDE FILTERS" : "FILTERS"}
+        </button>
+      </div>
+
+      {/* Filter block (visible always on desktop, toggled on mobile) */}
+      {(isOpen || typeof window === 'undefined') && (
+        <div className="grid grid-cols-1 gap-8 px-6 mb-6 font-sans text-base tracking-wider md:grid-cols-3">
+          {/* Sort */}
+          <div className="flex flex-col gap-2 text-left">
+            <span className="text-sm uppercase text-gray-500">Sort by</span>
+            <div className="whitespace-nowrap">
+              <SortProducts
+                sortBy={sortBy}
+                setQueryParams={setQueryParams}
+                data-testid={dataTestId}
+              />
+            </div>
+          </div>
+
+          {/* Categories */}
+          <div className="flex flex-col gap-2 text-left">
+            <span className="text-sm uppercase text-gray-500">Category</span>
+            <ul className="flex flex-col gap-2 text-sm">
+              <li className="whitespace-nowrap">
+                <LocalizedClientLink
+                  href="/store"
+                  className="hover:underline text-gray-600"
+                >
+                  All Products
+                </LocalizedClientLink>
+              </li>
+              {categories.filter((c) => !c.parent_category).map((category) => (
+                <li key={category.id} className="whitespace-nowrap">
+                  <LocalizedClientLink
+                    href={`/categories/${category.handle}`}
+                    className="hover:underline text-gray-600"
+                  >
+                    {category.name}
+                  </LocalizedClientLink>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Collections */}
+          <div className="flex flex-col gap-2 text-left">
+            <span className="text-sm uppercase text-gray-500">Collection</span>
+            <ul className="flex flex-col gap-2 text-sm">
+              {collections.map((collection) => (
+                <li key={collection.id} className="whitespace-nowrap">
+                  <LocalizedClientLink
+                    href={`/collections/${collection.handle}`}
+                    className="hover:underline text-gray-600"
+                  >
+                    {collection.title}
+                  </LocalizedClientLink>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
-      </div>
-
-      {/* Categories */}
-      <div className="flex flex-col gap-2 text-left">
-        <span className="text-sm uppercase text-gray-500">Category</span>
-        <ul className="flex flex-col gap-2 text-sm">
-          <li className="whitespace-nowrap">
-            <LocalizedClientLink
-              href="/store"
-              className="hover:underline text-gray-600"
-            >
-              All Products
-            </LocalizedClientLink>
-          </li>
-          {categories.filter((c) => !c.parent_category).map((category) => (
-            <li key={category.id} className="whitespace-nowrap">
-              <LocalizedClientLink
-                href={`/categories/${category.handle}`}
-                className="hover:underline text-gray-600"
-              >
-                {category.name}
-              </LocalizedClientLink>
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      {/* Collections */}
-      <div className="flex flex-col gap-2 text-left">
-        <span className="text-sm uppercase text-gray-500">Collection</span>
-        <ul className="flex flex-col gap-2 text-sm">
-          {collections.map((collection) => (
-            <li key={collection.id} className="whitespace-nowrap">
-              <LocalizedClientLink
-                href={`/collections/${collection.handle}`}
-                className="hover:underline text-gray-600"
-              >
-                {collection.title}
-              </LocalizedClientLink>
-            </li>
-          ))}
-        </ul>
-      </div>
+      )}
     </div>
   )
 }
