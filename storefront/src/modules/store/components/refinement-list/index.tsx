@@ -1,3 +1,4 @@
+// ✅ 1. REFINEMENT LIST (filters with toggle, left on desktop, top on mobile)
 "use client"
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
@@ -64,19 +65,16 @@ const RefinementList = ({ sortBy, "data-testid": dataTestId }: RefinementListPro
   }
 
   return (
-    <div className="w-full sm:w-[200px] mb-6 sm:mb-0 sm:mr-10">
-      {/* Button visible on both mobile and desktop */}
+    <div className="w-full small:max-w-[200px] small:mr-8 mb-6">
       <button
         onClick={() => setShowFilters(!showFilters)}
-        className="w-full border uppercase text-sm tracking-wider px-4 py-2 mb-4 sm:w-full sm:py-1"
+        className="uppercase text-sm tracking-wider border px-4 py-2 w-full text-left"
       >
         {showFilters ? "Hide Filters" : "Filters"}
       </button>
 
-      {/* Vertical filters on toggle */}
       {showFilters && (
-        <div className="flex flex-col gap-6 font-sans text-sm tracking-wide">
-          {/* Sort */}
+        <div className="flex flex-col gap-6 mt-6 font-sans text-sm tracking-wide">
           <div className="flex flex-col gap-2">
             <span className="text-xs uppercase text-gray-500">Sort by</span>
             <SortProducts
@@ -86,7 +84,6 @@ const RefinementList = ({ sortBy, "data-testid": dataTestId }: RefinementListPro
             />
           </div>
 
-          {/* Categories */}
           <div className="flex flex-col gap-2">
             <span className="text-xs uppercase text-gray-500">Category</span>
             <ul className="flex flex-col gap-1">
@@ -108,7 +105,6 @@ const RefinementList = ({ sortBy, "data-testid": dataTestId }: RefinementListPro
             </ul>
           </div>
 
-          {/* Collections */}
           <div className="flex flex-col gap-2">
             <span className="text-xs uppercase text-gray-500">Collection</span>
             <ul className="flex flex-col gap-1">
@@ -131,3 +127,106 @@ const RefinementList = ({ sortBy, "data-testid": dataTestId }: RefinementListPro
 }
 
 export default RefinementList
+
+// ✅ 2. STORE TEMPLATE (filters слева, товары справа)
+
+import { Suspense } from "react"
+import SkeletonProductGrid from "@modules/skeletons/templates/skeleton-product-grid"
+import RefinementList from "@modules/store/components/refinement-list"
+import { SortOptions } from "@modules/store/components/refinement-list/sort-products"
+import PaginatedProducts from "./paginated-products"
+
+const StoreTemplate = ({
+  sortBy,
+  page,
+  countryCode,
+}: {
+  sortBy?: SortOptions
+  page?: string
+  countryCode: string
+}) => {
+  const pageNumber = page ? parseInt(page) : 1
+  const sort = sortBy || "created_at"
+
+  return (
+    <div className="flex flex-col small:flex-row small:items-start py-6 content-container">
+      <RefinementList sortBy={sort} />
+      <div className="w-full">
+        <div className="mb-8 text-2xl-semi">
+          <h1>All products</h1>
+        </div>
+        <Suspense fallback={<SkeletonProductGrid />}>
+          <PaginatedProducts
+            sortBy={sort}
+            page={pageNumber}
+            countryCode={countryCode}
+          />
+        </Suspense>
+      </div>
+    </div>
+  )
+}
+
+export default StoreTemplate
+
+// ✅ 3. PAGINATED PRODUCTS (мелкая сетка, без огромных гапов)
+
+import { getProductsListWithSort } from "@lib/data/products"
+import { getRegion } from "@lib/data/regions"
+import ProductPreview from "@modules/products/components/product-preview"
+import { Pagination } from "@modules/store/components/pagination"
+import { SortOptions } from "@modules/store/components/refinement-list/sort-products"
+
+const PRODUCT_LIMIT = 12
+
+export default async function PaginatedProducts({
+  sortBy,
+  page,
+  collectionId,
+  categoryId,
+  productsIds,
+  countryCode,
+}: {
+  sortBy?: SortOptions
+  page: number
+  collectionId?: string
+  categoryId?: string
+  productsIds?: string[]
+  countryCode: string
+}) {
+  const queryParams: any = { limit: PRODUCT_LIMIT }
+
+  if (collectionId) queryParams.collection_id = [collectionId]
+  if (categoryId) queryParams.category_id = [categoryId]
+  if (productsIds) queryParams.id = productsIds
+  if (sortBy === "created_at") queryParams.order = "created_at"
+
+  const region = await getRegion(countryCode)
+  if (!region) return null
+
+  const {
+    response: { products, count },
+  } = await getProductsListWithSort({
+    page,
+    queryParams,
+    sortBy,
+    countryCode,
+  })
+
+  const totalPages = Math.ceil(count / PRODUCT_LIMIT)
+
+  return (
+    <>
+      <ul className="grid grid-cols-2 small:grid-cols-3 medium:grid-cols-4 gap-x-4 gap-y-6 w-full">
+        {products.map((p) => (
+          <li key={p.id}>
+            <ProductPreview product={p} region={region} />
+          </li>
+        ))}
+      </ul>
+      {totalPages > 1 && (
+        <Pagination page={page} totalPages={totalPages} />
+      )}
+    </>
+  )
+}
