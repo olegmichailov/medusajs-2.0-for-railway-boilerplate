@@ -1,118 +1,62 @@
-"use client"
+import React from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 
-import { usePathname, useRouter, useSearchParams } from "next/navigation"
-import { useCallback, useEffect, useState } from "react"
-import { SortOptions } from "./sort-products"
-import SortProducts from "./sort-products"
-import { getCategoriesList } from "@lib/data/categories"
-import { getCollectionsList } from "@lib/data/collections"
-import LocalizedClientLink from "@modules/common/components/localized-client-link"
+const sortOptions = [
+  { label: "Latest Arrivals", value: "created_at" },
+  { label: "Price: Low -> High", value: "price_asc" },
+  { label: "Price: High -> Low", value: "price_desc" },
+]
 
-// Types
-interface RefinementListProps {
-  sortBy: SortOptions
-  "data-testid"?: string
-}
+const categories = ["All Products", "Shirts", "Sweatshirts", "Merch", "art prints"]
+const collections = ["Springtime!", "gmorkl & friends"]
 
-interface Category {
-  id: string
-  name: string
-  handle: string
-  parent_category?: any
-  category_children?: Category[]
-}
-
-interface Collection {
-  id: string
-  title: string
-  handle: string
-}
-
-const RefinementList = ({ sortBy, "data-testid": dataTestId }: RefinementListProps) => {
+const RefinementList = () => {
   const router = useRouter()
-  const pathname = usePathname()
   const searchParams = useSearchParams()
+  const currentSort = searchParams.get("sortBy") || "created_at"
 
-  const [categories, setCategories] = useState<Category[]>([])
-  const [collections, setCollections] = useState<Collection[]>([])
-
-  useEffect(() => {
-    const fetchData = async () => {
-      const { product_categories } = await getCategoriesList(0, 100)
-      const { collections } = await getCollectionsList(0, 100)
-      setCategories(product_categories || [])
-      setCollections(collections || [])
-    }
-    fetchData()
-  }, [])
-
-  const createQueryString = useCallback(
-    (name: string, value: string) => {
-      const params = new URLSearchParams(searchParams)
-      if (value) {
-        params.set(name, value)
-      } else {
-        params.delete(name)
-      }
-      return params.toString()
-    },
-    [searchParams]
-  )
-
-  const setQueryParams = (name: string, value: string) => {
-    const query = createQueryString(name, value)
-    router.push(`${pathname}?${query}`)
+  const handleSortChange = (value: string) => {
+    const params = new URLSearchParams(searchParams)
+    params.set("sortBy", value)
+    router.push(`?${params.toString()}`)
   }
 
   return (
-    <div className="flex small:flex-col gap-12 py-4 mb-8 small:px-0 pl-6 small:min-w-[250px] small:ml-[1.675rem] font-sans text-base tracking-wider">
-      {/* Sort */}
-      <div className="flex flex-col gap-2">
-        <span className="text-sm uppercase text-gray-500">Sort by</span>
-        <SortProducts
-          sortBy={sortBy}
-          setQueryParams={setQueryParams}
-          data-testid={dataTestId}
-        />
-      </div>
-
-      {/* Categories */}
-      <div className="flex flex-col gap-2">
-        <span className="text-sm uppercase text-gray-500">Category</span>
-        <ul className="flex flex-col gap-2 text-sm">
-          <li>
-            <LocalizedClientLink
-              href="/store"
-              className="hover:underline text-gray-600"
+    <div className="flex flex-col gap-6 sm:flex-row sm:justify-between sm:items-start sm:gap-12">
+      <div className="flex-1">
+        <h3 className="text-xs uppercase tracking-wide mb-2">Sort By</h3>
+        <ul className="space-y-1">
+          {sortOptions.map((option) => (
+            <li
+              key={option.value}
+              onClick={() => handleSortChange(option.value)}
+              className={`cursor-pointer text-sm hover:underline ${
+                currentSort === option.value ? "font-semibold" : ""
+              }`}
             >
-              All Products
-            </LocalizedClientLink>
-          </li>
-          {categories.filter((c) => !c.parent_category).map((category) => (
-            <li key={category.id}>
-              <LocalizedClientLink
-                href={`/categories/${category.handle}`}
-                className="hover:underline text-gray-600"
-              >
-                {category.name}
-              </LocalizedClientLink>
+              {option.label}
             </li>
           ))}
         </ul>
       </div>
 
-      {/* Collections */}
-      <div className="flex flex-col gap-2">
-        <span className="text-sm uppercase text-gray-500">Collection</span>
-        <ul className="flex flex-col gap-2 text-sm">
+      <div className="flex-1">
+        <h3 className="text-xs uppercase tracking-wide mb-2">Category</h3>
+        <ul className="space-y-1">
+          {categories.map((category) => (
+            <li key={category} className="cursor-pointer text-sm hover:underline">
+              {category}
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <div className="flex-1">
+        <h3 className="text-xs uppercase tracking-wide mb-2">Collection</h3>
+        <ul className="space-y-1">
           {collections.map((collection) => (
-            <li key={collection.id}>
-              <LocalizedClientLink
-                href={`/collections/${collection.handle}`}
-                className="hover:underline text-gray-600"
-              >
-                {collection.title}
-              </LocalizedClientLink>
+            <li key={collection} className="cursor-pointer text-sm hover:underline">
+              {collection}
             </li>
           ))}
         </ul>
