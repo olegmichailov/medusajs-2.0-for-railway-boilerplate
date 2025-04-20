@@ -65,17 +65,17 @@ const RefinementList = ({ sortBy, "data-testid": dataTestId }: RefinementListPro
 
   return (
     <>
-      {/* Mobile button */}
-      <div className="flex justify-start mb-4 sm:hidden px-6">
+      {/* Mobile-only FILTER button */}
+      <div className="sm:hidden w-full px-6 mb-4">
         <button
           onClick={() => setShowFilters(!showFilters)}
-          className="border border-black px-4 py-2 uppercase text-xs tracking-widest"
+          className="w-full text-center border border-black py-3 uppercase tracking-widest text-sm"
         >
-          {showFilters ? "Hide Filters" : "Show Filters"}
+          {showFilters ? "Hide Filters" : "Filters"}
         </button>
       </div>
 
-      {/* Filter block */}
+      {/* Filter block (responsive) */}
       <div
         className={`${
           showFilters ? "flex" : "hidden"
