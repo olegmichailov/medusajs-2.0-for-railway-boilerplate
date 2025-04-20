@@ -77,8 +77,8 @@ const RefinementList = ({ sortBy, "data-testid": dataTestId }: RefinementListPro
         </button>
       </div>
 
-      {/* Desktop layout — always visible */}
-      <div className="hidden md:grid grid-cols-3 gap-8 px-6 mb-6 font-sans text-base tracking-wider">
+      {/* Desktop layout — one column */}
+      <div className="hidden md:flex flex-col gap-8 px-6 mb-6 font-sans text-base tracking-wider">
         {/* Sort */}
         <div className="flex flex-col gap-2 text-left">
           <span className="text-sm uppercase text-gray-500">Sort by</span>
