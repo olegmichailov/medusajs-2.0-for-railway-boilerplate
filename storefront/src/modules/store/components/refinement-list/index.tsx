@@ -1,3 +1,4 @@
+// src/modules/store/components/refinement-list/index.tsx
 "use client"
 
 import { useEffect, useState } from "react"
@@ -31,6 +32,12 @@ export default function RefinementList() {
     { value: "price_desc", label: "Price: High → Low" },
   ]
 
+  const cleanPathname = pathname.replace(/\/(de|en)\/\1/, "/$1")
+
+  const buildSortLink = (value: string) => {
+    return `${cleanPathname.split("?")[0]}?sortBy=${value}`
+  }
+
   const buildUrlWithSort = (basePath: string) => {
     return currentSort === "created_at"
       ? basePath
@@ -45,7 +52,7 @@ export default function RefinementList() {
           {sortOptions.map((option) => (
             <li key={option.value}>
               <LocalizedClientLink
-                href={`${pathname?.split("?")[0]}?sortBy=${option.value}`}
+                href={buildSortLink(option.value)}
                 className={`hover:underline ${
                   currentSort === option.value ? "font-semibold" : ""
                 }`}
