@@ -1,10 +1,9 @@
 "use client"
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
-import { useCallback, useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { SortOptions } from "./sort-products"
 import SortProducts from "./sort-products"
-
 import { getCategoriesList } from "@lib/data/categories"
 import { getCollectionsList } from "@lib/data/collections"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
@@ -36,9 +35,6 @@ const RefinementList = ({ sortBy, "data-testid": dataTestId }: RefinementListPro
   const [categories, setCategories] = useState<Category[]>([])
   const [collections, setCollections] = useState<Collection[]>([])
 
-  // Вырезаем countryCode из pathname: /de/store => de
-  const countryCode = pathname.split("/")[1] || ""
-
   useEffect(() => {
     const fetchData = async () => {
       const { product_categories } = await getCategoriesList(0, 100)
@@ -69,6 +65,8 @@ const RefinementList = ({ sortBy, "data-testid": dataTestId }: RefinementListPro
     router.push(`${pathname}?${query}`)
   }
 
+  const localePrefix = `/${pathname.split("/")[1]}`
+
   return (
     <div className="flex small:flex-col gap-12 py-4 mb-8 small:px-0 pl-6 small:min-w-[250px] small:ml-[1.675rem] font-sans text-base tracking-wider">
       {/* Sort */}
@@ -87,18 +85,18 @@ const RefinementList = ({ sortBy, "data-testid": dataTestId }: RefinementListPro
         <ul className="flex flex-col gap-2 text-sm">
           <li>
             <LocalizedClientLink
-              href={`/${countryCode}/store`}
+              href={`${localePrefix}/store`}
               className="hover:underline text-gray-600"
             >
               All Products
             </LocalizedClientLink>
           </li>
           {categories
-            .filter((c) => !c.parent_category && c.name && c.handle)
+            .filter((c) => !c.parent_category)
             .map((category) => (
               <li key={category.id}>
                 <LocalizedClientLink
-                  href={`/${countryCode}/categories/${category.handle}`}
+                  href={`${localePrefix}/categories/${category.handle}`}
                   className="hover:underline text-gray-600"
                 >
                   {category.name}
@@ -114,24 +112,22 @@ const RefinementList = ({ sortBy, "data-testid": dataTestId }: RefinementListPro
         <ul className="flex flex-col gap-2 text-sm">
           <li>
             <LocalizedClientLink
-              href={`/${countryCode}/store`}
+              href={`${localePrefix}/store`}
               className="hover:underline text-gray-600"
             >
               All Products
             </LocalizedClientLink>
           </li>
-          {collections
-            .filter((c) => c.title && c.handle)
-            .map((collection) => (
-              <li key={collection.id}>
-                <LocalizedClientLink
-                  href={`/${countryCode}/collections/${collection.handle}`}
-                  className="hover:underline text-gray-600"
-                >
-                  {collection.title}
-                </LocalizedClientLink>
-              </li>
-            ))}
+          {collections.map((collection) => (
+            <li key={collection.id}>
+              <LocalizedClientLink
+                href={`${localePrefix}/collections/${collection.handle}`}
+                className="hover:underline text-gray-600"
+              >
+                {collection.title}
+              </LocalizedClientLink>
+            </li>
+          ))}
         </ul>
       </div>
     </div>
