@@ -20,11 +20,14 @@ const StoreTemplate = ({
 
   return (
     <div
-      className="flex flex-col small:flex-row small:items-start py-6 content-container"
+      className="max-w-screen-xl mx-auto px-6 flex gap-10"
       data-testid="category-container"
     >
-      <RefinementList sortBy={sort} />
-      <div className="w-full">
+      <aside className="w-[220px] pt-6">
+        <RefinementList sortBy={sort} />
+      </aside>
+
+      <main className="flex-1 pt-6">
         <div className="mb-8 text-2xl-semi">
           <h1 data-testid="store-page-title">All products</h1>
         </div>
@@ -35,7 +38,7 @@ const StoreTemplate = ({
             countryCode={countryCode}
           />
         </Suspense>
-      </div>
+      </main>
     </div>
   )
 }
