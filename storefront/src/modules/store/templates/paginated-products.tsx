@@ -1,4 +1,4 @@
-import { getProductsListWithSort } from "@lib/data/products"
+import { getProductsList } from "@lib/data/products"
 import { getRegion } from "@lib/data/regions"
 import ProductPreview from "@modules/products/components/product-preview"
 import { Pagination } from "@modules/store/components/pagination"
@@ -45,7 +45,7 @@ export default async function PaginatedProducts({
     queryParams.id = productsIds
   }
 
-  // Сортировка
+  // Оригинальная логика сортировки
   switch (sortBy) {
     case "price_asc":
       queryParams.order = "variants.prices.amount"
@@ -53,10 +53,8 @@ export default async function PaginatedProducts({
     case "price_desc":
       queryParams.order = "-variants.prices.amount"
       break
-    case "created_at":
     default:
       queryParams.order = "created_at"
-      break
   }
 
   const region = await getRegion(countryCode)
@@ -64,8 +62,8 @@ export default async function PaginatedProducts({
 
   const {
     response: { products, count },
-  } = await getProductsListWithSort({
-    page,
+  } = await getProductsList({
+    pageParam: page,
     queryParams,
     countryCode,
   })
@@ -74,10 +72,7 @@ export default async function PaginatedProducts({
 
   return (
     <>
-      <ul
-        className="grid grid-cols-2 w-full small:grid-cols-3 medium:grid-cols-4 gap-x-6 gap-y-8"
-        data-testid="products-list"
-      >
+      <ul className="grid grid-cols-2 w-full small:grid-cols-3 medium:grid-cols-4 gap-x-6 gap-y-8" data-testid="products-list">
         {products.map((p) => (
           <li key={p.id}>
             <ProductPreview product={p} region={region} />
