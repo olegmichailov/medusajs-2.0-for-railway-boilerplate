@@ -65,7 +65,7 @@ const RefinementList = ({ sortBy, "data-testid": dataTestId }: RefinementListPro
 
   return (
     <>
-      {/* Mobile-only FILTER button */}
+      {/* Кнопка сверху для мобайла */}
       <div className="sm:hidden w-full px-6 mb-4">
         <button
           onClick={() => setShowFilters(!showFilters)}
@@ -75,13 +75,12 @@ const RefinementList = ({ sortBy, "data-testid": dataTestId }: RefinementListPro
         </button>
       </div>
 
-      {/* Filter block (responsive) */}
+      {/* Левая колонка — всегда видимая на десктопе, свернутая по кнопке на мобайле */}
       <div
         className={`${
           showFilters ? "flex" : "hidden"
-        } sm:flex flex-col sm:gap-8 gap-6 sm:w-[250px] px-6 sm:px-0 mb-6 sm:mb-0`}
+        } sm:flex flex-col gap-8 w-full sm:w-[200px] px-6 sm:px-0 mb-6 sm:mb-0`}
       >
-        {/* Sort */}
         <div className="flex flex-col gap-2">
           <span className="text-sm uppercase text-gray-500">Sort by</span>
           <SortProducts
@@ -91,7 +90,6 @@ const RefinementList = ({ sortBy, "data-testid": dataTestId }: RefinementListPro
           />
         </div>
 
-        {/* Categories */}
         <div className="flex flex-col gap-2">
           <span className="text-sm uppercase text-gray-500">Category</span>
           <ul className="flex flex-col gap-2 text-sm">
@@ -118,7 +116,6 @@ const RefinementList = ({ sortBy, "data-testid": dataTestId }: RefinementListPro
           </ul>
         </div>
 
-        {/* Collections */}
         <div className="flex flex-col gap-2">
           <span className="text-sm uppercase text-gray-500">Collection</span>
           <ul className="flex flex-col gap-2 text-sm">
