@@ -34,9 +34,9 @@ const RefinementList = ({
     fetchData()
   }, [])
 
-  const countryCode = pathname?.split("/")?.[1] || ""
-  const storeBasePath = `/${countryCode}/store`
-  const preserveSort = sortBy !== "created_at" ? `?sortBy=${sortBy}` : ""
+  const countryCode = pathname?.split("/")[1] || "de"
+  const storePath = `/${countryCode}/store`
+  const sortQuery = sortBy !== "created_at" ? `?sortBy=${sortBy}` : ""
 
   return (
     <div className="flex small:flex-col gap-12 py-4 mb-8 small:px-0 pl-6 small:min-w-[250px] small:ml-[1.675rem]">
@@ -61,7 +61,7 @@ const RefinementList = ({
           <ul className="flex flex-col gap-2 text-sm text-gray-600">
             <li>
               <LocalizedClientLink
-                href={`${storeBasePath}${preserveSort}`}
+                href={`${storePath}${sortQuery}`}
                 className="hover:underline"
               >
                 All Products
@@ -72,7 +72,7 @@ const RefinementList = ({
               .map((c) => (
                 <li key={c.id}>
                   <LocalizedClientLink
-                    href={`/${countryCode}/categories/${c.handle}${preserveSort}`}
+                    href={`/${countryCode}/categories/${c.handle}${sortQuery}`}
                     className={`hover:underline ${
                       pathname.includes(`/categories/${c.handle}`)
                         ? "font-semibold"
@@ -92,18 +92,10 @@ const RefinementList = ({
         <div className="flex flex-col gap-2">
           <span className="text-xs uppercase text-gray-500">Collection</span>
           <ul className="flex flex-col gap-2 text-sm text-gray-600">
-            <li>
-              <LocalizedClientLink
-                href={`${storeBasePath}${preserveSort}`}
-                className="hover:underline"
-              >
-                All Products
-              </LocalizedClientLink>
-            </li>
             {collections.map((c) => (
               <li key={c.id}>
                 <LocalizedClientLink
-                  href={`/${countryCode}/collections/${c.handle}${preserveSort}`}
+                  href={`/${countryCode}/collections/${c.handle}${sortQuery}`}
                   className={`hover:underline ${
                     pathname.includes(`/collections/${c.handle}`)
                       ? "font-semibold"
