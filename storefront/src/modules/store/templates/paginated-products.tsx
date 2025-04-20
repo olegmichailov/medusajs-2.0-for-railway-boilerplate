@@ -30,7 +30,7 @@ export default async function PaginatedProducts({
   countryCode: string
 }) {
   const queryParams: PaginatedProductsParams = {
-    limit: PRODUCT_LIMIT,
+    limit: 12,
   }
 
   if (collectionId) {
@@ -69,14 +69,16 @@ export default async function PaginatedProducts({
   return (
     <>
       <ul
-        className="grid w-full grid-cols-2 small:grid-cols-3 medium:grid-cols-4 gap-x-6 gap-y-8 pr-4"
+        className="grid grid-cols-2 w-full small:grid-cols-3 medium:grid-cols-4 gap-x-6 gap-y-8"
         data-testid="products-list"
       >
-        {products.map((p) => (
-          <li key={p.id} className="flex flex-col items-start">
-            <ProductPreview product={p} region={region} />
-          </li>
-        ))}
+        {products.map((p) => {
+          return (
+            <li key={p.id}>
+              <ProductPreview product={p} region={region} />
+            </li>
+          )
+        })}
       </ul>
       {totalPages > 1 && (
         <Pagination
