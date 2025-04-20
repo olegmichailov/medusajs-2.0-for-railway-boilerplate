@@ -1,8 +1,9 @@
 "use client"
 
-import { usePathname, useRouter, useSearchParams } from "next/navigation"
+import { usePathname, useSearchParams } from "next/navigation"
 import { useCallback } from "react"
 
+import LocalizedClientLink from "@modules/common/components/localized-client-link"
 import SortProducts, { SortOptions } from "./sort-products"
 
 const categories = [
@@ -25,27 +26,22 @@ type RefinementListProps = {
 }
 
 const RefinementList = ({ sortBy, "data-testid": dataTestId }: RefinementListProps) => {
-  const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
 
-  const createQueryString = useCallback(
-    (name: string, value: string) => {
-      const params = new URLSearchParams(searchParams)
-      if (value) {
-        params.set(name, value)
-      } else {
-        params.delete(name)
+  const createSortQuery = useCallback(
+    (sort: string) => {
+      const params = new URLSearchParams()
+      if (sort && sort !== "created_at") {
+        params.set("sortBy", sort)
       }
-      return params.toString()
+      const query = params.toString()
+      return query ? `?${query}` : ""
     },
-    [searchParams]
+    []
   )
 
-  const setQueryParams = (name: string, value: string) => {
-    const query = createQueryString(name, value)
-    router.push(`${pathname}?${query}`)
-  }
+  const currentSort = searchParams.get("sortBy") || "created_at"
 
   return (
     <div className="flex small:flex-col gap-12 py-4 mb-8 small:px-0 pl-6 small:min-w-[250px] small:ml-[1.675rem]">
@@ -53,39 +49,57 @@ const RefinementList = ({ sortBy, "data-testid": dataTestId }: RefinementListPro
         <span className="text-xs uppercase text-gray-500">Sort by</span>
         <SortProducts
           sortBy={sortBy}
-          setQueryParams={setQueryParams}
+          setQueryParams={() => {}}
           data-testid={dataTestId}
         />
       </div>
 
       <div className="flex flex-col gap-2">
         <span className="text-xs uppercase text-gray-500">Category</span>
-        {categories.map(({ value, label }) => (
-          <button
-            key={value}
-            onClick={() => setQueryParams("category", value)}
-            className={`text-left text-sm hover:underline ${
-              searchParams.get("category") === value ? "font-semibold" : "text-gray-600"
-            }`}
-          >
-            {label}
-          </button>
-        ))}
+        {categories.map(({ value, label }) => {
+          const isActive = pathname.includes(`/categories/${value}`)
+          const href = value
+            ? `/categories/${value}${createSortQuery(currentSort)}`
+            : `/store${createSortQuery(currentSort)}`
+
+          return (
+            <LocalizedClientLink
+              key={value}
+              href={href}
+              className={`text-left text-sm hover:underline ${
+                isActive || (!value && pathname.endsWith("/store"))
+                  ? "font-semibold"
+                  : "text-gray-600"
+              }`}
+            >
+              {label}
+            </LocalizedClientLink>
+          )
+        })}
       </div>
 
       <div className="flex flex-col gap-2">
         <span className="text-xs uppercase text-gray-500">Collection</span>
-        {collections.map(({ value, label }) => (
-          <button
-            key={value}
-            onClick={() => setQueryParams("collection", value)}
-            className={`text-left text-sm hover:underline ${
-              searchParams.get("collection") === value ? "font-semibold" : "text-gray-600"
-            }`}
-          >
-            {label}
-          </button>
-        ))}
+        {collections.map(({ value, label }) => {
+          const isActive = pathname.includes(`/collections/${value}`)
+          const href = value
+            ? `/collections/${value}${createSortQuery(currentSort)}`
+            : `/store${createSortQuery(currentSort)}`
+
+          return (
+            <LocalizedClientLink
+              key={value}
+              href={href}
+              className={`text-left text-sm hover:underline ${
+                isActive || (!value && pathname.endsWith("/store"))
+                  ? "font-semibold"
+                  : "text-gray-600"
+              }`}
+            >
+              {label}
+            </LocalizedClientLink>
+          )
+        })}
       </div>
     </div>
   )
