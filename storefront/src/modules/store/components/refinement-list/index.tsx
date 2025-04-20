@@ -18,7 +18,6 @@ interface Category {
   name: string
   handle: string
   parent_category?: any
-  category_children?: Category[]
 }
 
 interface Collection {
@@ -34,7 +33,7 @@ const RefinementList = ({ sortBy, "data-testid": dataTestId }: RefinementListPro
 
   const [categories, setCategories] = useState<Category[]>([])
   const [collections, setCollections] = useState<Collection[]>([])
-  const [showFilters, setShowFilters] = useState(false)
+  const [isMobileOpen, setIsMobileOpen] = useState(false)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -65,39 +64,45 @@ const RefinementList = ({ sortBy, "data-testid": dataTestId }: RefinementListPro
   }
 
   return (
-    <div className="w-full mb-6">
-      <button
-        onClick={() => setShowFilters(!showFilters)}
-        className="uppercase text-sm tracking-wider border px-4 py-2 mb-4"
+    <aside className="w-full small:w-64 mb-6 small:mb-0">
+      {/* Mobile Button */}
+      <div className="block small:hidden mb-4">
+        <button
+          onClick={() => setIsMobileOpen((prev) => !prev)}
+          className="uppercase text-sm tracking-wider border border-gray-300 px-4 py-2"
+        >
+          {isMobileOpen ? "HIDE FILTERS" : "SHOW FILTERS"}
+        </button>
+      </div>
+
+      {/* Filter Panel */}
+      <div
+        className={`${
+          isMobileOpen ? "block" : "hidden"
+        } small:block font-sans text-base tracking-wider`}
       >
-        {showFilters ? "Hide Filters" : "Filters"}
-      </button>
+        {/* Sort */}
+        <div className="mb-6">
+          <span className="text-sm uppercase text-gray-500">Sort by</span>
+          <SortProducts
+            sortBy={sortBy}
+            setQueryParams={setQueryParams}
+            data-testid={dataTestId}
+          />
+        </div>
 
-      {showFilters && (
-        <div className="grid gap-8 sm:grid-cols-1 md:grid-cols-3">
-          {/* Sort */}
-          <div className="flex flex-col gap-2">
-            <span className="text-sm uppercase text-gray-500">Sort by</span>
-            <SortProducts
-              sortBy={sortBy}
-              setQueryParams={setQueryParams}
-              data-testid={dataTestId}
-            />
-          </div>
-
-          {/* Categories */}
-          <div className="flex flex-col gap-2">
-            <span className="text-sm uppercase text-gray-500">Category</span>
-            <ul className="flex flex-col gap-2 text-sm">
-              <li>
-                <LocalizedClientLink
-                  href="/store"
-                  className="hover:underline text-gray-600"
-                >
-                  All Products
-                </LocalizedClientLink>
-              </li>
-              {categories.filter((c) => !c.parent_category).map((category) => (
+        {/* Categories */}
+        <div className="mb-6">
+          <span className="text-sm uppercase text-gray-500">Category</span>
+          <ul className="mt-2 flex flex-col gap-1 text-sm">
+            <li>
+              <LocalizedClientLink href="/store" className="hover:underline text-gray-600">
+                All Products
+              </LocalizedClientLink>
+            </li>
+            {categories
+              .filter((c) => !c.parent_category)
+              .map((category) => (
                 <li key={category.id}>
                   <LocalizedClientLink
                     href={`/categories/${category.handle}`}
@@ -107,28 +112,27 @@ const RefinementList = ({ sortBy, "data-testid": dataTestId }: RefinementListPro
                   </LocalizedClientLink>
                 </li>
               ))}
-            </ul>
-          </div>
-
-          {/* Collections */}
-          <div className="flex flex-col gap-2">
-            <span className="text-sm uppercase text-gray-500">Collection</span>
-            <ul className="flex flex-col gap-2 text-sm">
-              {collections.map((collection) => (
-                <li key={collection.id}>
-                  <LocalizedClientLink
-                    href={`/collections/${collection.handle}`}
-                    className="hover:underline text-gray-600"
-                  >
-                    {collection.title}
-                  </LocalizedClientLink>
-                </li>
-              ))}
-            </ul>
-          </div>
+          </ul>
         </div>
-      )}
-    </div>
+
+        {/* Collections */}
+        <div>
+          <span className="text-sm uppercase text-gray-500">Collection</span>
+          <ul className="mt-2 flex flex-col gap-1 text-sm">
+            {collections.map((collection) => (
+              <li key={collection.id}>
+                <LocalizedClientLink
+                  href={`/collections/${collection.handle}`}
+                  className="hover:underline text-gray-600"
+                >
+                  {collection.title}
+                </LocalizedClientLink>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </aside>
   )
 }
 
