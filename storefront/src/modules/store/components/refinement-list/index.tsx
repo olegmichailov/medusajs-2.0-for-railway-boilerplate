@@ -33,7 +33,7 @@ const RefinementList = ({ sortBy, "data-testid": dataTestId }: RefinementListPro
 
   const [categories, setCategories] = useState<Category[]>([])
   const [collections, setCollections] = useState<Collection[]>([])
-  const [showFilters, setShowFilters] = useState(true)
+  const [showFilters, setShowFilters] = useState(false) // 👉 СВЁРНУТЫ по умолчанию
 
   useEffect(() => {
     const fetchData = async () => {
@@ -68,14 +68,14 @@ const RefinementList = ({ sortBy, "data-testid": dataTestId }: RefinementListPro
       <div className="flex justify-start mb-4">
         <button
           onClick={() => setShowFilters(!showFilters)}
-          className="uppercase text-sm tracking-wider border px-6 py-2"
+          className="uppercase text-sm tracking-wider border px-6 py-2 w-full sm:w-auto"
         >
           {showFilters ? "Hide Filters" : "Filters"}
         </button>
       </div>
 
       {showFilters && (
-        <div className="flex flex-col gap-8 font-sans text-sm tracking-wide">
+        <div className="flex flex-col gap-8 font-sans text-sm tracking-wide max-w-md">
           {/* Sort */}
           <div className="flex flex-col gap-2">
             <span className="text-xs uppercase text-gray-500">Sort by</span>
