@@ -30,42 +30,39 @@ export default async function PaginatedProducts({
   countryCode: string
 }) {
   const queryParams: PaginatedProductsParams = {
-    limit: 12,
+    limit: PRODUCT_LIMIT,
   }
 
-  if (collectionId) queryParams["collection_id"] = [collectionId]
-  if (categoryId) queryParams["category_id"] = [categoryId]
-  if (productsIds) queryParams["id"] = productsIds
-  if (sortBy === "created_at") queryParams["order"] = "created_at"
+  if (collectionId) queryParams.collection_id = [collectionId]
+  if (categoryId) queryParams.category_id = [categoryId]
+  if (productsIds) queryParams.id = productsIds
+  if (sortBy === "created_at") queryParams.order = "created_at"
 
   const region = await getRegion(countryCode)
   if (!region) return null
 
   const {
     response: { products, count },
-  } = await getProductsListWithSort({ page, queryParams, sortBy, countryCode })
+  } = await getProductsListWithSort({
+    page,
+    queryParams,
+    sortBy,
+    countryCode,
+  })
 
   const totalPages = Math.ceil(count / PRODUCT_LIMIT)
 
   return (
     <>
-      <ul
-        className="grid grid-cols-2 small:grid-cols-3 medium:grid-cols-4 gap-x-4 gap-y-8 w-full"
-        data-testid="products-list"
-      >
+      <ul className="grid grid-cols-2 small:grid-cols-3 md:grid-cols-4 gap-x-4 gap-y-8 px-6 sm:px-0">
         {products.map((p) => (
           <li key={p.id}>
             <ProductPreview product={p} region={region} />
           </li>
         ))}
       </ul>
-
       {totalPages > 1 && (
-        <Pagination
-          data-testid="product-pagination"
-          page={page}
-          totalPages={totalPages}
-        />
+        <Pagination page={page} totalPages={totalPages} />
       )}
     </>
   )
