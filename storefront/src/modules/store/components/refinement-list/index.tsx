@@ -33,7 +33,7 @@ const RefinementList = ({ sortBy, "data-testid": dataTestId }: RefinementListPro
 
   const [categories, setCategories] = useState<Category[]>([])
   const [collections, setCollections] = useState<Collection[]>([])
-  const [showFilters, setShowFilters] = useState(false)
+  const [showFilters, setShowFilters] = useState(true)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -64,43 +64,38 @@ const RefinementList = ({ sortBy, "data-testid": dataTestId }: RefinementListPro
   }
 
   return (
-    <div className="w-full mb-8 px-4">
-      <div className="block small:hidden mb-4">
+    <div className="w-full mb-6">
+      <div className="flex justify-start mb-4">
         <button
           onClick={() => setShowFilters(!showFilters)}
-          className="w-full py-2 text-sm tracking-wider uppercase border border-black"
+          className="uppercase text-sm tracking-wider border px-6 py-2"
         >
           {showFilters ? "Hide Filters" : "Filters"}
         </button>
       </div>
 
-      <div
-        className={`${
-          showFilters ? "block" : "hidden"
-        } small:flex flex-col gap-8 text-sm tracking-wide font-sans`}
-      >
-        {/* Sort */}
-        <div className="flex flex-col gap-2">
-          <span className="text-xs uppercase text-gray-500">Sort by</span>
-          <SortProducts
-            sortBy={sortBy}
-            setQueryParams={setQueryParams}
-            data-testid={dataTestId}
-          />
-        </div>
+      {showFilters && (
+        <div className="flex flex-col gap-8 font-sans text-sm tracking-wide">
+          {/* Sort */}
+          <div className="flex flex-col gap-2">
+            <span className="text-xs uppercase text-gray-500">Sort by</span>
+            <SortProducts
+              sortBy={sortBy}
+              setQueryParams={setQueryParams}
+              data-testid={dataTestId}
+            />
+          </div>
 
-        {/* Categories */}
-        <div className="flex flex-col gap-2">
-          <span className="text-xs uppercase text-gray-500">Category</span>
-          <ul className="flex flex-col gap-1">
-            <li>
-              <LocalizedClientLink href="/store" className="hover:underline text-gray-600">
-                All Products
-              </LocalizedClientLink>
-            </li>
-            {categories
-              .filter((c) => !c.parent_category)
-              .map((category) => (
+          {/* Categories */}
+          <div className="flex flex-col gap-2">
+            <span className="text-xs uppercase text-gray-500">Category</span>
+            <ul className="flex flex-col gap-1">
+              <li>
+                <LocalizedClientLink href="/store" className="hover:underline text-gray-600">
+                  All Products
+                </LocalizedClientLink>
+              </li>
+              {categories.filter((c) => !c.parent_category).map((category) => (
                 <li key={category.id}>
                   <LocalizedClientLink
                     href={`/categories/${category.handle}`}
@@ -110,26 +105,27 @@ const RefinementList = ({ sortBy, "data-testid": dataTestId }: RefinementListPro
                   </LocalizedClientLink>
                 </li>
               ))}
-          </ul>
-        </div>
+            </ul>
+          </div>
 
-        {/* Collections */}
-        <div className="flex flex-col gap-2">
-          <span className="text-xs uppercase text-gray-500">Collection</span>
-          <ul className="flex flex-col gap-1">
-            {collections.map((collection) => (
-              <li key={collection.id}>
-                <LocalizedClientLink
-                  href={`/collections/${collection.handle}`}
-                  className="hover:underline text-gray-600"
-                >
-                  {collection.title}
-                </LocalizedClientLink>
-              </li>
-            ))}
-          </ul>
+          {/* Collections */}
+          <div className="flex flex-col gap-2">
+            <span className="text-xs uppercase text-gray-500">Collection</span>
+            <ul className="flex flex-col gap-1">
+              {collections.map((collection) => (
+                <li key={collection.id}>
+                  <LocalizedClientLink
+                    href={`/collections/${collection.handle}`}
+                    className="hover:underline text-gray-600"
+                  >
+                    {collection.title}
+                  </LocalizedClientLink>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }
