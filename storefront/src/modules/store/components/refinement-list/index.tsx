@@ -65,22 +65,24 @@ const RefinementList = ({ sortBy, "data-testid": dataTestId }: RefinementListPro
   }
 
   return (
-    <div className="flex flex-wrap gap-8 py-4 mb-8 px-4 sm:px-6 font-sans text-base tracking-wider justify-start">
+    <div className="flex flex-col gap-8 py-4 mb-8 px-4 font-sans text-base tracking-wider">
       {/* Sort */}
-      <div className="flex flex-col gap-2 min-w-[180px]">
+      <div className="flex flex-col gap-2 max-w-[250px] text-left">
         <span className="text-sm uppercase text-gray-500">Sort by</span>
-        <SortProducts
-          sortBy={sortBy}
-          setQueryParams={setQueryParams}
-          data-testid={dataTestId}
-        />
+        <div className="whitespace-nowrap">
+          <SortProducts
+            sortBy={sortBy}
+            setQueryParams={setQueryParams}
+            data-testid={dataTestId}
+          />
+        </div>
       </div>
 
       {/* Categories */}
-      <div className="flex flex-col gap-2 min-w-[180px]">
+      <div className="flex flex-col gap-2 max-w-[250px] ml-auto mr-auto">
         <span className="text-sm uppercase text-gray-500">Category</span>
         <ul className="flex flex-col gap-2 text-sm">
-          <li>
+          <li className="whitespace-nowrap">
             <LocalizedClientLink
               href="/store"
               className="hover:underline text-gray-600"
@@ -89,7 +91,7 @@ const RefinementList = ({ sortBy, "data-testid": dataTestId }: RefinementListPro
             </LocalizedClientLink>
           </li>
           {categories.filter((c) => !c.parent_category).map((category) => (
-            <li key={category.id}>
+            <li key={category.id} className="whitespace-nowrap">
               <LocalizedClientLink
                 href={`/categories/${category.handle}`}
                 className="hover:underline text-gray-600"
@@ -102,11 +104,11 @@ const RefinementList = ({ sortBy, "data-testid": dataTestId }: RefinementListPro
       </div>
 
       {/* Collections */}
-      <div className="flex flex-col gap-2 min-w-[180px]">
+      <div className="flex flex-col gap-2 max-w-[250px] ml-auto mr-auto">
         <span className="text-sm uppercase text-gray-500">Collection</span>
         <ul className="flex flex-col gap-2 text-sm">
           {collections.map((collection) => (
-            <li key={collection.id}>
+            <li key={collection.id} className="whitespace-nowrap">
               <LocalizedClientLink
                 href={`/collections/${collection.handle}`}
                 className="hover:underline text-gray-600"
