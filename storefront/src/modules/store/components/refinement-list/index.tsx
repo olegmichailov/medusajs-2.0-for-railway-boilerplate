@@ -77,62 +77,58 @@ const RefinementList = ({ sortBy, "data-testid": dataTestId }: RefinementListPro
         </button>
       </div>
 
-      {/* Desktop layout — fixed left column aligned with content */}
-      <div className="hidden md:flex max-w-screen-xl mx-auto px-6 mb-6">
-        <div className="w-[200px] mr-10 flex-shrink-0">
-          {/* Sort */}
-          <div className="flex flex-col gap-2 text-left mb-8">
-            <span className="text-sm uppercase text-gray-500">Sort by</span>
-            <div className="whitespace-nowrap">
-              <SortProducts
-                sortBy={sortBy}
-                setQueryParams={setQueryParams}
-                data-testid={dataTestId}
-              />
-            </div>
-          </div>
+      {/* Desktop layout — original inline layout */}
+      <div className="hidden md:flex small:flex-col gap-12 py-4 mb-8 small:px-0 pl-6 small:min-w-[250px] small:ml-[1.675rem] font-sans text-base tracking-wider">
+        {/* Sort */}
+        <div className="flex flex-col gap-2">
+          <span className="text-sm uppercase text-gray-500">Sort by</span>
+          <SortProducts
+            sortBy={sortBy}
+            setQueryParams={setQueryParams}
+            data-testid={dataTestId}
+          />
+        </div>
 
-          {/* Categories */}
-          <div className="flex flex-col gap-2 text-left mb-8">
-            <span className="text-sm uppercase text-gray-500">Category</span>
-            <ul className="flex flex-col gap-2 text-sm">
-              <li className="whitespace-nowrap">
+        {/* Categories */}
+        <div className="flex flex-col gap-2">
+          <span className="text-sm uppercase text-gray-500">Category</span>
+          <ul className="flex flex-col gap-2 text-sm">
+            <li>
+              <LocalizedClientLink
+                href="/store"
+                className="hover:underline text-gray-600"
+              >
+                All Products
+              </LocalizedClientLink>
+            </li>
+            {categories.filter((c) => !c.parent_category).map((category) => (
+              <li key={category.id}>
                 <LocalizedClientLink
-                  href="/store"
+                  href={`/categories/${category.handle}`}
                   className="hover:underline text-gray-600"
                 >
-                  All Products
+                  {category.name}
                 </LocalizedClientLink>
               </li>
-              {categories.filter((c) => !c.parent_category).map((category) => (
-                <li key={category.id} className="whitespace-nowrap">
-                  <LocalizedClientLink
-                    href={`/categories/${category.handle}`}
-                    className="hover:underline text-gray-600"
-                  >
-                    {category.name}
-                  </LocalizedClientLink>
-                </li>
-              ))}
-            </ul>
-          </div>
+            ))}
+          </ul>
+        </div>
 
-          {/* Collections */}
-          <div className="flex flex-col gap-2 text-left">
-            <span className="text-sm uppercase text-gray-500">Collection</span>
-            <ul className="flex flex-col gap-2 text-sm">
-              {collections.map((collection) => (
-                <li key={collection.id} className="whitespace-nowrap">
-                  <LocalizedClientLink
-                    href={`/collections/${collection.handle}`}
-                    className="hover:underline text-gray-600"
-                  >
-                    {collection.title}
-                  </LocalizedClientLink>
-                </li>
-              ))}
-            </ul>
-          </div>
+        {/* Collections */}
+        <div className="flex flex-col gap-2">
+          <span className="text-sm uppercase text-gray-500">Collection</span>
+          <ul className="flex flex-col gap-2 text-sm">
+            {collections.map((collection) => (
+              <li key={collection.id}>
+                <LocalizedClientLink
+                  href={`/collections/${collection.handle}`}
+                  className="hover:underline text-gray-600"
+                >
+                  {collection.title}
+                </LocalizedClientLink>
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
 
