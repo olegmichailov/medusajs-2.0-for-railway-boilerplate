@@ -1,7 +1,7 @@
 "use client"
 
-import { usePathname, useSearchParams } from "next/navigation"
-import { useMemo } from "react"
+import { usePathname } from "next/navigation"
+import { useEffect, useState } from "react"
 import { getCategoriesList } from "@lib/data/categories"
 import { getCollectionsList } from "@lib/data/collections"
 import SortProducts, { SortOptions } from "./sort-products"
@@ -9,22 +9,25 @@ import LocalizedClientLink from "@modules/common/components/localized-client-lin
 
 type RefinementListProps = {
   sortBy: SortOptions
-  search?: boolean
   "data-testid"?: string
 }
 
-export default async function RefinementList({
-  sortBy,
-  "data-testid": dataTestId,
-}: RefinementListProps) {
+const RefinementList = ({ sortBy, "data-testid": dataTestId }: RefinementListProps) => {
   const pathname = usePathname()
-  const searchParams = useSearchParams()
+  const [categories, setCategories] = useState<any[]>([])
+  const [collections, setCollections] = useState<any[]>([])
 
-  const currentCategory = searchParams.get("category")
-  const currentCollection = searchParams.get("collection")
+  useEffect(() => {
+    const fetchData = async () => {
+      const { product_categories } = await getCategoriesList(0, 100)
+      const { collections } = await getCollectionsList(0, 100)
 
-  const { product_categories } = await getCategoriesList(0, 100)
-  const { collections } = await getCollectionsList(0, 100)
+      setCategories(product_categories || [])
+      setCollections(collections || [])
+    }
+
+    fetchData()
+  }, [])
 
   return (
     <div className="flex small:flex-col gap-12 py-4 mb-8 small:px-0 pl-6 small:min-w-[250px] small:ml-[1.675rem] font-sans text-sm tracking-wide">
@@ -35,18 +38,16 @@ export default async function RefinementList({
       </div>
 
       {/* КАТЕГОРИИ */}
-      {product_categories && (
+      {categories.length > 0 && (
         <div className="flex flex-col gap-2">
           <span className="text-xs uppercase text-gray-500">Category</span>
           <LocalizedClientLink
-            href={`${pathname.split("?")[0]}`}
-            className={`text-left text-sm hover:underline ${
-              !currentCategory ? "font-semibold" : "text-gray-600"
-            }`}
+            href="/store"
+            className="text-left text-sm hover:underline"
           >
             All Categories
           </LocalizedClientLink>
-          {product_categories.map((c) => {
+          {categories.map((c) => {
             if (c.parent_category) return null
             return (
               <LocalizedClientLink
@@ -64,14 +65,12 @@ export default async function RefinementList({
       )}
 
       {/* КОЛЛЕКЦИИ */}
-      {collections && (
+      {collections.length > 0 && (
         <div className="flex flex-col gap-2">
           <span className="text-xs uppercase text-gray-500">Collection</span>
           <LocalizedClientLink
-            href={`${pathname.split("?")[0]}`}
-            className={`text-left text-sm hover:underline ${
-              !currentCollection ? "font-semibold" : "text-gray-600"
-            }`}
+            href="/store"
+            className="text-left text-sm hover:underline"
           >
             All Collections
           </LocalizedClientLink>
@@ -91,3 +90,5 @@ export default async function RefinementList({
     </div>
   )
 }
+
+export default RefinementList
