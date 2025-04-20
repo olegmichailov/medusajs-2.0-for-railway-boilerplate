@@ -45,16 +45,17 @@ export default async function PaginatedProducts({
     queryParams.id = productsIds
   }
 
-  // добавим порядок сортировки для всех вариантов
+  // Сортировка
   switch (sortBy) {
-    case "created_at":
-      queryParams.order = "created_at"
-      break
     case "price_asc":
-      queryParams.order = "prices.amount" // по возрастанию
+      queryParams.order = "variants.prices.amount"
       break
     case "price_desc":
-      queryParams.order = "-prices.amount" // по убыванию
+      queryParams.order = "-variants.prices.amount"
+      break
+    case "created_at":
+    default:
+      queryParams.order = "created_at"
       break
   }
 
@@ -66,7 +67,6 @@ export default async function PaginatedProducts({
   } = await getProductsListWithSort({
     page,
     queryParams,
-    sortBy,
     countryCode,
   })
 
@@ -74,7 +74,10 @@ export default async function PaginatedProducts({
 
   return (
     <>
-      <ul className="grid grid-cols-2 w-full small:grid-cols-3 medium:grid-cols-4 gap-x-6 gap-y-8" data-testid="products-list">
+      <ul
+        className="grid grid-cols-2 w-full small:grid-cols-3 medium:grid-cols-4 gap-x-6 gap-y-8"
+        data-testid="products-list"
+      >
         {products.map((p) => (
           <li key={p.id}>
             <ProductPreview product={p} region={region} />
