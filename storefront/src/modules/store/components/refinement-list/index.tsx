@@ -77,9 +77,66 @@ const RefinementList = ({ sortBy, "data-testid": dataTestId }: RefinementListPro
         </button>
       </div>
 
-      {/* Filter block (visible always on desktop, toggled on mobile) */}
-      {(isOpen || typeof window === 'undefined') && (
-        <div className="grid grid-cols-1 gap-8 px-6 mb-6 font-sans text-base tracking-wider md:grid-cols-3">
+      {/* Desktop layout — always visible */}
+      <div className="hidden md:grid grid-cols-3 gap-8 px-6 mb-6 font-sans text-base tracking-wider">
+        {/* Sort */}
+        <div className="flex flex-col gap-2 text-left">
+          <span className="text-sm uppercase text-gray-500">Sort by</span>
+          <div className="whitespace-nowrap">
+            <SortProducts
+              sortBy={sortBy}
+              setQueryParams={setQueryParams}
+              data-testid={dataTestId}
+            />
+          </div>
+        </div>
+
+        {/* Categories */}
+        <div className="flex flex-col gap-2 text-left">
+          <span className="text-sm uppercase text-gray-500">Category</span>
+          <ul className="flex flex-col gap-2 text-sm">
+            <li className="whitespace-nowrap">
+              <LocalizedClientLink
+                href="/store"
+                className="hover:underline text-gray-600"
+              >
+                All Products
+              </LocalizedClientLink>
+            </li>
+            {categories.filter((c) => !c.parent_category).map((category) => (
+              <li key={category.id} className="whitespace-nowrap">
+                <LocalizedClientLink
+                  href={`/categories/${category.handle}`}
+                  className="hover:underline text-gray-600"
+                >
+                  {category.name}
+                </LocalizedClientLink>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Collections */}
+        <div className="flex flex-col gap-2 text-left">
+          <span className="text-sm uppercase text-gray-500">Collection</span>
+          <ul className="flex flex-col gap-2 text-sm">
+            {collections.map((collection) => (
+              <li key={collection.id} className="whitespace-nowrap">
+                <LocalizedClientLink
+                  href={`/collections/${collection.handle}`}
+                  className="hover:underline text-gray-600"
+                >
+                  {collection.title}
+                </LocalizedClientLink>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+
+      {/* Mobile layout — toggled */}
+      {isOpen && (
+        <div className="grid grid-cols-1 gap-8 px-6 mb-6 font-sans text-base tracking-wider sm:grid-cols-3 md:hidden">
           {/* Sort */}
           <div className="flex flex-col gap-2 text-left">
             <span className="text-sm uppercase text-gray-500">Sort by</span>
