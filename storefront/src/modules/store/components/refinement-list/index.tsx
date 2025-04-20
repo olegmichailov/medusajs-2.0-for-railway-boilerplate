@@ -65,9 +65,9 @@ const RefinementList = ({ sortBy, "data-testid": dataTestId }: RefinementListPro
   }
 
   return (
-    <div className="flex flex-col gap-8 py-4 mb-8 px-4 font-sans text-base tracking-wider">
+    <div className="grid grid-cols-1 gap-8 py-4 mb-8 px-6 font-sans text-base tracking-wider md:grid-cols-3">
       {/* Sort */}
-      <div className="flex flex-col gap-2 max-w-[250px] text-left">
+      <div className="flex flex-col gap-2 text-left">
         <span className="text-sm uppercase text-gray-500">Sort by</span>
         <div className="whitespace-nowrap">
           <SortProducts
@@ -79,7 +79,7 @@ const RefinementList = ({ sortBy, "data-testid": dataTestId }: RefinementListPro
       </div>
 
       {/* Categories */}
-      <div className="flex flex-col gap-2 max-w-[250px] ml-auto mr-auto">
+      <div className="flex flex-col gap-2 text-left">
         <span className="text-sm uppercase text-gray-500">Category</span>
         <ul className="flex flex-col gap-2 text-sm">
           <li className="whitespace-nowrap">
@@ -104,7 +104,7 @@ const RefinementList = ({ sortBy, "data-testid": dataTestId }: RefinementListPro
       </div>
 
       {/* Collections */}
-      <div className="flex flex-col gap-2 max-w-[250px] ml-auto mr-auto">
+      <div className="flex flex-col gap-2 text-left">
         <span className="text-sm uppercase text-gray-500">Collection</span>
         <ul className="flex flex-col gap-2 text-sm">
           {collections.map((collection) => (
