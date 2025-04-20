@@ -64,16 +64,16 @@ const RefinementList = ({ sortBy, "data-testid": dataTestId }: RefinementListPro
   }
 
   return (
-    <div className="w-full small:max-w-[220px] mb-6 small:mb-0 small:mr-8">
+    <div className="w-full small:w-[200px] shrink-0 mb-6 small:mb-0">
       <button
         onClick={() => setShowFilters(!showFilters)}
-        className="uppercase text-sm tracking-wider border px-4 py-2 mb-4 w-full"
+        className="uppercase text-sm tracking-wider border w-full px-4 py-2 mb-4"
       >
         {showFilters ? "Hide Filters" : "Filters"}
       </button>
 
       {showFilters && (
-        <div className="flex flex-col gap-6 font-sans text-sm tracking-wide">
+        <div className="flex flex-col gap-8 font-sans text-sm tracking-wide">
           {/* Sort */}
           <div className="flex flex-col gap-2">
             <span className="text-xs uppercase text-gray-500">Sort by</span>
