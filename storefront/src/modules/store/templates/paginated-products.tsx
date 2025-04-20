@@ -30,46 +30,27 @@ export default async function PaginatedProducts({
   countryCode: string
 }) {
   const queryParams: PaginatedProductsParams = {
-    limit: PRODUCT_LIMIT,
+    limit: 12,
   }
 
-  if (collectionId) {
-    queryParams.collection_id = [collectionId]
-  }
-
-  if (categoryId) {
-    queryParams.category_id = [categoryId]
-  }
-
-  if (productsIds) {
-    queryParams.id = productsIds
-  }
-
-  if (sortBy === "created_at") {
-    queryParams.order = "created_at"
-  }
+  if (collectionId) queryParams["collection_id"] = [collectionId]
+  if (categoryId) queryParams["category_id"] = [categoryId]
+  if (productsIds) queryParams["id"] = productsIds
+  if (sortBy === "created_at") queryParams["order"] = "created_at"
 
   const region = await getRegion(countryCode)
-
-  if (!region) {
-    return null
-  }
+  if (!region) return null
 
   const {
     response: { products, count },
-  } = await getProductsListWithSort({
-    page,
-    queryParams,
-    sortBy,
-    countryCode,
-  })
+  } = await getProductsListWithSort({ page, queryParams, sortBy, countryCode })
 
   const totalPages = Math.ceil(count / PRODUCT_LIMIT)
 
   return (
     <>
       <ul
-        className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-10"
+        className="grid grid-cols-2 small:grid-cols-3 medium:grid-cols-4 gap-x-4 gap-y-8 w-full"
         data-testid="products-list"
       >
         {products.map((p) => (
@@ -78,8 +59,13 @@ export default async function PaginatedProducts({
           </li>
         ))}
       </ul>
+
       {totalPages > 1 && (
-        <Pagination page={page} totalPages={totalPages} data-testid="product-pagination" />
+        <Pagination
+          data-testid="product-pagination"
+          page={page}
+          totalPages={totalPages}
+        />
       )}
     </>
   )
