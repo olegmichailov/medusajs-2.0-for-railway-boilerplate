@@ -77,11 +77,11 @@ const RefinementList = ({ sortBy, "data-testid": dataTestId }: RefinementListPro
         </button>
       </div>
 
-      {/* Desktop layout — one narrow column */}
-      <div className="hidden md:block max-w-screen-xl mx-auto px-6 mb-6">
-        <div className="flex flex-col gap-8 w-[220px]">
+      {/* Desktop layout — fixed left column aligned with content */}
+      <div className="hidden md:flex max-w-screen-xl mx-auto px-6 mb-6">
+        <div className="w-[200px] mr-10 flex-shrink-0">
           {/* Sort */}
-          <div className="flex flex-col gap-2 text-left">
+          <div className="flex flex-col gap-2 text-left mb-8">
             <span className="text-sm uppercase text-gray-500">Sort by</span>
             <div className="whitespace-nowrap">
               <SortProducts
@@ -93,7 +93,7 @@ const RefinementList = ({ sortBy, "data-testid": dataTestId }: RefinementListPro
           </div>
 
           {/* Categories */}
-          <div className="flex flex-col gap-2 text-left">
+          <div className="flex flex-col gap-2 text-left mb-8">
             <span className="text-sm uppercase text-gray-500">Category</span>
             <ul className="flex flex-col gap-2 text-sm">
               <li className="whitespace-nowrap">
