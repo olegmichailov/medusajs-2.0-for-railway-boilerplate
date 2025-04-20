@@ -2,8 +2,8 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useCallback, useEffect, useState } from "react"
-import { SortOptions } from "./sort-products/index"
-import SortProducts from "./sort-products/index"
+import { SortOptions } from "./sort-products"
+import SortProducts from "./sort-products"
 import { getCategoriesList } from "@lib/data/categories"
 import { getCollectionsList } from "@lib/data/collections"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
