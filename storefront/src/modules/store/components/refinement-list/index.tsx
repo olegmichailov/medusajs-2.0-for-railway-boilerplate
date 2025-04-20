@@ -1,7 +1,6 @@
-// src/modules/store/components/refinement-list/index.tsx
 "use client"
 
-import { useEffect, useState, useMemo } from "react"
+import { useEffect, useState } from "react"
 import { usePathname, useSearchParams } from "next/navigation"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 
@@ -32,6 +31,12 @@ export default function RefinementList() {
     { value: "price_desc", label: "Price: High → Low" },
   ]
 
+  const buildUrlWithSort = (basePath: string) => {
+    return currentSort === "created_at"
+      ? basePath
+      : `${basePath}?sortBy=${currentSort}`
+  }
+
   return (
     <aside className="flex flex-col gap-y-8 text-base pr-4">
       <div className="flex flex-col gap-y-2">
@@ -61,7 +66,7 @@ export default function RefinementList() {
               .map((c) => (
                 <li key={c.id}>
                   <LocalizedClientLink
-                    href={`/categories/${c.handle}`}
+                    href={buildUrlWithSort(`/categories/${c.handle}`)}
                     className={`hover:underline ${
                       pathname.includes(`/categories/${c.handle}`)
                         ? "font-semibold"
@@ -83,7 +88,7 @@ export default function RefinementList() {
             {collections.map((c) => (
               <li key={c.id}>
                 <LocalizedClientLink
-                  href={`/collections/${c.handle}`}
+                  href={buildUrlWithSort(`/collections/${c.handle}`)}
                   className={`hover:underline ${
                     pathname.includes(`/collections/${c.handle}`)
                       ? "font-semibold"
@@ -100,23 +105,3 @@ export default function RefinementList() {
     </aside>
   )
 }
-
-
-// lib/utils/sorting.ts
-export const getSortOrder = (key: string): string => {
-  switch (key) {
-    case "price_asc":
-      return "variants.prices.amount"
-    case "price_desc":
-      return "-variants.prices.amount"
-    case "created_at":
-    default:
-      return "created_at"
-  }
-}
-
-
-// В компоненте PaginatedProducts:
-// const sortBy = searchParams.get("sortBy") || "created_at"
-// const order = getSortOrder(sortBy)
-// И передать `order` в products.list() как параметр.
