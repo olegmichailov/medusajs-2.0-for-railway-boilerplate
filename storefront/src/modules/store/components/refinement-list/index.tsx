@@ -1,6 +1,8 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
+import { useCallback, useEffect, useState } from "react"
+
 import { SortOptions } from "./sort-products"
 import SortProducts from "./sort-products"
 
@@ -8,25 +10,30 @@ import { getCategoriesList } from "@lib/data/categories"
 import { getCollectionsList } from "@lib/data/collections"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 
-interface RefinementListProps {
+type RefinementListProps = {
   sortBy: SortOptions
   "data-testid"?: string
 }
 
-interface Category {
+type Category = {
   id: string
   name: string
   handle: string
   parent_category?: any
+  category_children?: Category[]
 }
 
-interface Collection {
+type Collection = {
   id: string
   title: string
   handle: string
 }
 
 const RefinementList = ({ sortBy, "data-testid": dataTestId }: RefinementListProps) => {
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+
   const [categories, setCategories] = useState<Category[]>([])
   const [collections, setCollections] = useState<Collection[]>([])
 
@@ -42,6 +49,27 @@ const RefinementList = ({ sortBy, "data-testid": dataTestId }: RefinementListPro
     fetchData()
   }, [])
 
+  const createQueryString = useCallback(
+    (name: string, value: string) => {
+      const params = new URLSearchParams(searchParams)
+      if (value) {
+        params.set(name, value)
+      } else {
+        params.delete(name)
+      }
+      return params.toString()
+    },
+    [searchParams]
+  )
+
+  const setQueryParams = (name: string, value: string) => {
+    const query = createQueryString(name, value)
+    router.push(`${pathname}?${query}`)
+  }
+
+  // Вычисляем countryCode из pathname
+  const countryCode = pathname.split("/")[1] || ""
+
   return (
     <div className="flex small:flex-col gap-12 py-4 mb-8 small:px-0 pl-6 small:min-w-[250px] small:ml-[1.675rem] font-sans text-base tracking-wider">
       {/* Sort */}
@@ -49,6 +77,7 @@ const RefinementList = ({ sortBy, "data-testid": dataTestId }: RefinementListPro
         <span className="text-xs uppercase text-gray-500">Sort by</span>
         <SortProducts
           sortBy={sortBy}
+          setQueryParams={setQueryParams}
           data-testid={dataTestId}
         />
       </div>
@@ -59,7 +88,7 @@ const RefinementList = ({ sortBy, "data-testid": dataTestId }: RefinementListPro
         <ul className="flex flex-col gap-2 text-sm">
           <li>
             <LocalizedClientLink
-              href="/store"
+              href={`/${countryCode}/store`}
               className="hover:underline text-gray-600"
             >
               All Products
@@ -70,7 +99,7 @@ const RefinementList = ({ sortBy, "data-testid": dataTestId }: RefinementListPro
             .map((category) => (
               <li key={category.id}>
                 <LocalizedClientLink
-                  href={`/categories/${category.handle}`}
+                  href={`/${countryCode}/categories/${category.handle}`}
                   className="hover:underline text-gray-600"
                 >
                   {category.name}
@@ -86,7 +115,7 @@ const RefinementList = ({ sortBy, "data-testid": dataTestId }: RefinementListPro
         <ul className="flex flex-col gap-2 text-sm">
           <li>
             <LocalizedClientLink
-              href="/store"
+              href={`/${countryCode}/store`}
               className="hover:underline text-gray-600"
             >
               All Products
@@ -95,7 +124,7 @@ const RefinementList = ({ sortBy, "data-testid": dataTestId }: RefinementListPro
           {collections.map((collection) => (
             <li key={collection.id}>
               <LocalizedClientLink
-                href={`/collections/${collection.handle}`}
+                href={`/${countryCode}/collections/${collection.handle}`}
                 className="hover:underline text-gray-600"
               >
                 {collection.title}
