@@ -2,7 +2,6 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useCallback } from "react"
-
 import SortProducts, { SortOptions } from "./sort-products"
 
 const categories = [
@@ -49,9 +48,6 @@ const RefinementList = ({ sortBy, "data-testid": dataTestId }: RefinementListPro
     router.push(`${pathname}?${query}`)
   }
 
-  const currentCategory = searchParams.get("category") || ""
-  const currentCollection = searchParams.get("collection") || ""
-
   return (
     <div className="flex small:flex-col gap-12 py-4 mb-8 small:px-0 pl-6 small:min-w-[250px] small:ml-[1.675rem]">
       <div className="flex flex-col gap-2">
@@ -70,7 +66,7 @@ const RefinementList = ({ sortBy, "data-testid": dataTestId }: RefinementListPro
             key={value}
             onClick={() => setQueryParams("category", value)}
             className={`text-left text-sm hover:underline ${
-              currentCategory === value ? "font-semibold" : "text-gray-600"
+              searchParams.get("category") === value ? "font-semibold" : "text-gray-600"
             }`}
           >
             {label}
@@ -85,7 +81,7 @@ const RefinementList = ({ sortBy, "data-testid": dataTestId }: RefinementListPro
             key={value}
             onClick={() => setQueryParams("collection", value)}
             className={`text-left text-sm hover:underline ${
-              currentCollection === value ? "font-semibold" : "text-gray-600"
+              searchParams.get("collection") === value ? "font-semibold" : "text-gray-600"
             }`}
           >
             {label}
