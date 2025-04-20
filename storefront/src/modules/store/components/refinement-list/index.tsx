@@ -1,23 +1,11 @@
 "use client"
 
-import { usePathname, useRouter, useSearchParams } from "next/navigation"
-import { useCallback } from "react"
+import { usePathname, useSearchParams } from "next/navigation"
+import { useMemo } from "react"
+import { getCategoriesList } from "@lib/data/categories"
+import { getCollectionsList } from "@lib/data/collections"
 import SortProducts, { SortOptions } from "./sort-products"
-
-const categories = [
-  { value: "", label: "All Categories" },
-  { value: "short", label: "Short" },
-  { value: "sweet-short", label: "Sweet Short" },
-  { value: "merch", label: "Merch" },
-  { value: "art", label: "Art" },
-  { value: "print", label: "Print" },
-]
-
-const collections = [
-  { value: "", label: "All Collections" },
-  { value: "springtime", label: "Springtime!" },
-  { value: "comorco-and-friends", label: "Comorco and Friends" },
-]
+import LocalizedClientLink from "@modules/common/components/localized-client-link"
 
 type RefinementListProps = {
   sortBy: SortOptions
@@ -25,71 +13,81 @@ type RefinementListProps = {
   "data-testid"?: string
 }
 
-const RefinementList = ({ sortBy, "data-testid": dataTestId }: RefinementListProps) => {
-  const router = useRouter()
+export default async function RefinementList({
+  sortBy,
+  "data-testid": dataTestId,
+}: RefinementListProps) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
 
-  const createQueryString = useCallback(
-    (name: string, value: string) => {
-      const params = new URLSearchParams(searchParams)
-      if (value) {
-        params.set(name, value)
-      } else {
-        params.delete(name)
-      }
-      return params.toString()
-    },
-    [searchParams]
-  )
+  const currentCategory = searchParams.get("category")
+  const currentCollection = searchParams.get("collection")
 
-  const setQueryParams = (name: string, value: string) => {
-    const query = createQueryString(name, value)
-    router.push(`${pathname}?${query}`)
-  }
+  const { product_categories } = await getCategoriesList(0, 100)
+  const { collections } = await getCollectionsList(0, 100)
 
   return (
-    <div className="flex small:flex-col gap-12 py-4 mb-8 small:px-0 pl-6 small:min-w-[250px] small:ml-[1.675rem]">
+    <div className="flex small:flex-col gap-12 py-4 mb-8 small:px-0 pl-6 small:min-w-[250px] small:ml-[1.675rem] font-sans text-sm tracking-wide">
+      {/* СОРТИРОВКА */}
       <div className="flex flex-col gap-2">
         <span className="text-xs uppercase text-gray-500">Sort by</span>
-        <SortProducts
-          sortBy={sortBy}
-          setQueryParams={setQueryParams}
-          data-testid={dataTestId}
-        />
+        <SortProducts sortBy={sortBy} data-testid={dataTestId} />
       </div>
 
-      <div className="flex flex-col gap-2">
-        <span className="text-xs uppercase text-gray-500">Category</span>
-        {categories.map(({ value, label }) => (
-          <button
-            key={value}
-            onClick={() => setQueryParams("category", value)}
+      {/* КАТЕГОРИИ */}
+      {product_categories && (
+        <div className="flex flex-col gap-2">
+          <span className="text-xs uppercase text-gray-500">Category</span>
+          <LocalizedClientLink
+            href={`${pathname.split("?")[0]}`}
             className={`text-left text-sm hover:underline ${
-              searchParams.get("category") === value ? "font-semibold" : "text-gray-600"
+              !currentCategory ? "font-semibold" : "text-gray-600"
             }`}
           >
-            {label}
-          </button>
-        ))}
-      </div>
+            All Categories
+          </LocalizedClientLink>
+          {product_categories.map((c) => {
+            if (c.parent_category) return null
+            return (
+              <LocalizedClientLink
+                key={c.id}
+                href={`/categories/${c.handle}`}
+                className={`text-left text-sm hover:underline ${
+                  pathname.includes(c.handle) ? "font-semibold" : "text-gray-600"
+                }`}
+              >
+                {c.name}
+              </LocalizedClientLink>
+            )
+          })}
+        </div>
+      )}
 
-      <div className="flex flex-col gap-2">
-        <span className="text-xs uppercase text-gray-500">Collection</span>
-        {collections.map(({ value, label }) => (
-          <button
-            key={value}
-            onClick={() => setQueryParams("collection", value)}
+      {/* КОЛЛЕКЦИИ */}
+      {collections && (
+        <div className="flex flex-col gap-2">
+          <span className="text-xs uppercase text-gray-500">Collection</span>
+          <LocalizedClientLink
+            href={`${pathname.split("?")[0]}`}
             className={`text-left text-sm hover:underline ${
-              searchParams.get("collection") === value ? "font-semibold" : "text-gray-600"
+              !currentCollection ? "font-semibold" : "text-gray-600"
             }`}
           >
-            {label}
-          </button>
-        ))}
-      </div>
+            All Collections
+          </LocalizedClientLink>
+          {collections.map((c) => (
+            <LocalizedClientLink
+              key={c.id}
+              href={`/collections/${c.handle}`}
+              className={`text-left text-sm hover:underline ${
+                pathname.includes(c.handle) ? "font-semibold" : "text-gray-600"
+              }`}
+            >
+              {c.title}
+            </LocalizedClientLink>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
-
-export default RefinementList
