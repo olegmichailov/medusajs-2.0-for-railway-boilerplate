@@ -1,135 +1,43 @@
-"use client"
+import { Suspense } from "react"
 
-import { usePathname, useRouter, useSearchParams } from "next/navigation"
-import { useCallback, useEffect, useState } from "react"
-import { SortOptions } from "./sort-products"
-import SortProducts from "./sort-products"
-import { getCategoriesList } from "@lib/data/categories"
-import { getCollectionsList } from "@lib/data/collections"
-import LocalizedClientLink from "@modules/common/components/localized-client-link"
+import SkeletonProductGrid from "@modules/skeletons/templates/skeleton-product-grid"
+import RefinementList from "@modules/store/components/refinement-list"
+import { SortOptions } from "@modules/store/components/refinement-list/sort-products"
 
-interface RefinementListProps {
-  sortBy: SortOptions
-  "data-testid"?: string
-}
+import PaginatedProducts from "./paginated-products"
 
-interface Category {
-  id: string
-  name: string
-  handle: string
-  parent_category?: any
-  category_children?: Category[]
-}
-
-interface Collection {
-  id: string
-  title: string
-  handle: string
-}
-
-const RefinementList = ({ sortBy, "data-testid": dataTestId }: RefinementListProps) => {
-  const router = useRouter()
-  const pathname = usePathname()
-  const searchParams = useSearchParams()
-
-  const [categories, setCategories] = useState<Category[]>([])
-  const [collections, setCollections] = useState<Collection[]>([])
-  const [showFilters, setShowFilters] = useState(false)
-
-  useEffect(() => {
-    const fetchData = async () => {
-      const { product_categories } = await getCategoriesList(0, 100)
-      const { collections } = await getCollectionsList(0, 100)
-      setCategories(product_categories || [])
-      setCollections(collections || [])
-    }
-    fetchData()
-  }, [])
-
-  const createQueryString = useCallback(
-    (name: string, value: string) => {
-      const params = new URLSearchParams(searchParams)
-      if (value) {
-        params.set(name, value)
-      } else {
-        params.delete(name)
-      }
-      return params.toString()
-    },
-    [searchParams]
-  )
-
-  const setQueryParams = (name: string, value: string) => {
-    const query = createQueryString(name, value)
-    router.push(`${pathname}?${query}`)
-  }
+const StoreTemplate = ({
+  sortBy,
+  page,
+  countryCode,
+}: {
+  sortBy?: SortOptions
+  page?: string
+  countryCode: string
+}) => {
+  const pageNumber = page ? parseInt(page) : 1
+  const sort = sortBy || "created_at"
 
   return (
-    <div className="w-full mb-6">
-      <button
-        onClick={() => setShowFilters(!showFilters)}
-        className="uppercase text-sm tracking-wider border px-4 py-2 mb-4"
-      >
-        {showFilters ? "Hide Filters" : "Filters"}
-      </button>
-
-      {showFilters && (
-        <div className="grid gap-8 sm:grid-cols-1 md:grid-cols-3">
-          {/* Sort */}
-          <div className="flex flex-col gap-2">
-            <span className="text-sm uppercase text-gray-500">Sort by</span>
-            <SortProducts
-              sortBy={sortBy}
-              setQueryParams={setQueryParams}
-              data-testid={dataTestId}
-            />
-          </div>
-
-          {/* Categories */}
-          <div className="flex flex-col gap-2">
-            <span className="text-sm uppercase text-gray-500">Category</span>
-            <ul className="flex flex-col gap-2 text-sm">
-              <li>
-                <LocalizedClientLink
-                  href="/store"
-                  className="hover:underline text-gray-600"
-                >
-                  All Products
-                </LocalizedClientLink>
-              </li>
-              {categories.filter((c) => !c.parent_category).map((category) => (
-                <li key={category.id}>
-                  <LocalizedClientLink
-                    href={`/categories/${category.handle}`}
-                    className="hover:underline text-gray-600"
-                  >
-                    {category.name}
-                  </LocalizedClientLink>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Collections */}
-          <div className="flex flex-col gap-2">
-            <span className="text-sm uppercase text-gray-500">Collection</span>
-            <ul className="flex flex-col gap-2 text-sm">
-              {collections.map((collection) => (
-                <li key={collection.id}>
-                  <LocalizedClientLink
-                    href={`/collections/${collection.handle}`}
-                    className="hover:underline text-gray-600"
-                  >
-                    {collection.title}
-                  </LocalizedClientLink>
-                </li>
-              ))}
-            </ul>
-          </div>
+    <div
+      className="flex flex-col small:flex-row small:items-start py-6 content-container"
+      data-testid="category-container"
+    >
+      <RefinementList sortBy={sort} />
+      <div className="w-full">
+        <div className="mb-8 text-2xl-semi">
+          <h1 data-testid="store-page-title">All products</h1>
         </div>
-      )}
+        <Suspense fallback={<SkeletonProductGrid />}>
+          <PaginatedProducts
+            sortBy={sort}
+            page={pageNumber}
+            countryCode={countryCode}
+          />
+        </Suspense>
+      </div>
     </div>
   )
 }
 
-export default RefinementList
+export default StoreTemplate
