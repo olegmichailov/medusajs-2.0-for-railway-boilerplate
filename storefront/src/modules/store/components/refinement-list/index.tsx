@@ -7,7 +7,6 @@ import SortProducts from "./sort-products"
 import { getCategoriesList } from "@lib/data/categories"
 import { getCollectionsList } from "@lib/data/collections"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
-import { Button } from "@components/ui/button"
 
 interface RefinementListProps {
   sortBy: SortOptions
@@ -19,7 +18,6 @@ interface Category {
   name: string
   handle: string
   parent_category?: any
-  category_children?: Category[]
 }
 
 interface Collection {
@@ -66,27 +64,24 @@ const RefinementList = ({ sortBy, "data-testid": dataTestId }: RefinementListPro
   }
 
   return (
-    <div className="w-full small:w-[250px] small:min-w-[250px] small:mr-10">
-      {/* Mobile Toggle */}
-      <div className="flex small:hidden mb-4">
-        <Button
-          variant="outline"
-          className="w-full py-2 tracking-wide uppercase text-sm"
+    <div className="w-full mb-8 px-4">
+      <div className="block small:hidden mb-4">
+        <button
           onClick={() => setShowFilters(!showFilters)}
+          className="w-full py-2 text-sm tracking-wider uppercase border border-black"
         >
           {showFilters ? "Hide Filters" : "Filters"}
-        </Button>
+        </button>
       </div>
 
-      {/* Filters Content */}
       <div
         className={`${
-          showFilters ? "flex" : "hidden"
-        } small:flex flex-col gap-10 small:gap-8 font-sans text-sm tracking-wider`}
+          showFilters ? "block" : "hidden"
+        } small:flex flex-col gap-8 text-sm tracking-wide font-sans`}
       >
         {/* Sort */}
         <div className="flex flex-col gap-2">
-          <span className="text-sm uppercase text-gray-500">Sort by</span>
+          <span className="text-xs uppercase text-gray-500">Sort by</span>
           <SortProducts
             sortBy={sortBy}
             setQueryParams={setQueryParams}
@@ -96,33 +91,32 @@ const RefinementList = ({ sortBy, "data-testid": dataTestId }: RefinementListPro
 
         {/* Categories */}
         <div className="flex flex-col gap-2">
-          <span className="text-sm uppercase text-gray-500">Category</span>
-          <ul className="flex flex-col gap-2">
+          <span className="text-xs uppercase text-gray-500">Category</span>
+          <ul className="flex flex-col gap-1">
             <li>
-              <LocalizedClientLink
-                href="/store"
-                className="hover:underline text-gray-600"
-              >
+              <LocalizedClientLink href="/store" className="hover:underline text-gray-600">
                 All Products
               </LocalizedClientLink>
             </li>
-            {categories.filter((c) => !c.parent_category).map((category) => (
-              <li key={category.id}>
-                <LocalizedClientLink
-                  href={`/categories/${category.handle}`}
-                  className="hover:underline text-gray-600"
-                >
-                  {category.name}
-                </LocalizedClientLink>
-              </li>
-            ))}
+            {categories
+              .filter((c) => !c.parent_category)
+              .map((category) => (
+                <li key={category.id}>
+                  <LocalizedClientLink
+                    href={`/categories/${category.handle}`}
+                    className="hover:underline text-gray-600"
+                  >
+                    {category.name}
+                  </LocalizedClientLink>
+                </li>
+              ))}
           </ul>
         </div>
 
         {/* Collections */}
         <div className="flex flex-col gap-2">
-          <span className="text-sm uppercase text-gray-500">Collection</span>
-          <ul className="flex flex-col gap-2">
+          <span className="text-xs uppercase text-gray-500">Collection</span>
+          <ul className="flex flex-col gap-1">
             {collections.map((collection) => (
               <li key={collection.id}>
                 <LocalizedClientLink
