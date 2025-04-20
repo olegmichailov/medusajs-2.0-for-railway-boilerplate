@@ -1,50 +1,43 @@
-"use client"
+import { Suspense } from "react"
 
-import FilterRadioGroup from "@modules/common/components/filter-radio-group"
+import SkeletonProductGrid from "@modules/skeletons/templates/skeleton-product-grid"
+import RefinementList from "@modules/store/components/refinement-list"
+import { SortOptions } from "@modules/store/components/refinement-list/sort-products"
 
-export type SortOptions = "price_asc" | "price_desc" | "created_at"
+import PaginatedProducts from "./paginated-products"
 
-type SortProductsProps = {
-  sortBy: SortOptions
-  setQueryParams: (name: string, value: SortOptions) => void
-  "data-testid"?: string
-}
-
-const sortOptions = [
-  {
-    value: "created_at",
-    label: "Latest Arrivals",
-  },
-  {
-    value: "price_asc",
-    label: "Price: Low -> High",
-  },
-  {
-    value: "price_desc",
-    label: "Price: High -> Low",
-  },
-]
-
-const SortProducts = ({
-  "data-testid": dataTestId,
+const StoreTemplate = ({
   sortBy,
-  setQueryParams,
-}: SortProductsProps) => {
-  const handleChange = (value: SortOptions) => {
-    setQueryParams("sortBy", value)
-  }
+  page,
+  countryCode,
+}: {
+  sortBy?: SortOptions
+  page?: string
+  countryCode: string
+}) => {
+  const pageNumber = page ? parseInt(page) : 1
+  const sort = sortBy || "created_at"
 
   return (
-    <div className="flex flex-col gap-2 font-sans text-sm tracking-wider">
-      {/** ⚠️ Заголовок убран, т.к. он уже есть снаружи — дубли не нужны */}
-      <FilterRadioGroup
-        items={sortOptions}
-        value={sortBy}
-        handleChange={handleChange}
-        data-testid={dataTestId}
-      />
+    <div className="flex flex-col sm:flex-row sm:items-start py-6 content-container">
+      {/* FILTERS */}
+      <RefinementList sortBy={sort} />
+
+      {/* PRODUCT LIST */}
+      <div className="w-full">
+        <div className="mb-8 text-2xl-semi px-6 sm:px-0">
+          <h1>All Products</h1>
+        </div>
+        <Suspense fallback={<SkeletonProductGrid />}>
+          <PaginatedProducts
+            sortBy={sort}
+            page={pageNumber}
+            countryCode={countryCode}
+          />
+        </Suspense>
+      </div>
     </div>
   )
 }
 
-export default SortProducts
+export default StoreTemplate
