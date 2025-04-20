@@ -1,114 +1,42 @@
-// src/modules/store/components/refinement-list/index.tsx
+// storefront/src/modules/store/components/refinement-list/index.tsx
 "use client"
 
-import { useEffect, useState } from "react"
-import { usePathname, useSearchParams } from "next/navigation"
-import LocalizedClientLink from "@modules/common/components/localized-client-link"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
+import { useCallback } from "react"
 
-import { getCategoriesList } from "@lib/data/categories"
-import { getCollectionsList } from "@lib/data/collections"
+import SortProducts, { SortOptions } from "./sort-products"
 
-export default function RefinementList() {
+type RefinementListProps = {
+  sortBy: SortOptions
+  search?: boolean
+  'data-testid'?: string
+}
+
+const RefinementList = ({ sortBy, 'data-testid': dataTestId }: RefinementListProps) => {
+  const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  const currentSort = searchParams.get("sortBy") || "created_at"
 
-  const [categories, setCategories] = useState([])
-  const [collections, setCollections] = useState([])
+  const createQueryString = useCallback(
+    (name: string, value: string) => {
+      const params = new URLSearchParams(searchParams)
+      params.set(name, value)
 
-  useEffect(() => {
-    const fetchData = async () => {
-      const { product_categories } = await getCategoriesList(0, 100)
-      const { collections } = await getCollectionsList(0, 100)
-      setCategories(product_categories || [])
-      setCollections(collections || [])
-    }
-    fetchData()
-  }, [])
+      return params.toString()
+    },
+    [searchParams]
+  )
 
-  const sortOptions = [
-    { value: "created_at", label: "Latest Arrivals" },
-    { value: "price_asc", label: "Price: Low → High" },
-    { value: "price_desc", label: "Price: High → Low" },
-  ]
-
-  const cleanPathname = pathname.replace(/\/(de|en)\/\1/, "/$1")
-
-  const buildSortLink = (value: string) => {
-    return `${cleanPathname.split("?")[0]}?sortBy=${value}`
-  }
-
-  const buildUrlWithSort = (basePath: string) => {
-    return currentSort === "created_at"
-      ? basePath
-      : `${basePath}?sortBy=${currentSort}`
+  const setQueryParams = (name: string, value: string) => {
+    const query = createQueryString(name, value)
+    router.push(`${pathname}?${query}`)
   }
 
   return (
-    <aside className="flex flex-col gap-y-8 text-base pr-4">
-      <div className="flex flex-col gap-y-2">
-        <span className="font-semibold text-xs">Sort By</span>
-        <ul className="flex flex-col gap-y-1">
-          {sortOptions.map((option) => (
-            <li key={option.value}>
-              <LocalizedClientLink
-                href={buildSortLink(option.value)}
-                className={`hover:underline ${
-                  currentSort === option.value ? "font-semibold" : ""
-                }`}
-              >
-                {option.label}
-              </LocalizedClientLink>
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      {categories.length > 0 && (
-        <div className="flex flex-col gap-y-2">
-          <span className="font-semibold text-xs">Category</span>
-          <ul className="flex flex-col gap-y-1">
-            {categories
-              .filter((cat) => !cat.parent_category)
-              .map((c) => (
-                <li key={c.id}>
-                  <LocalizedClientLink
-                    href={buildUrlWithSort(`/categories/${c.handle}`)}
-                    className={`hover:underline ${
-                      pathname.includes(`/categories/${c.handle}`)
-                        ? "font-semibold"
-                        : ""
-                    }`}
-                  >
-                    {c.name}
-                  </LocalizedClientLink>
-                </li>
-              ))}
-          </ul>
-        </div>
-      )}
-
-      {collections.length > 0 && (
-        <div className="flex flex-col gap-y-2">
-          <span className="font-semibold text-xs">Collection</span>
-          <ul className="flex flex-col gap-y-1">
-            {collections.map((c) => (
-              <li key={c.id}>
-                <LocalizedClientLink
-                  href={buildUrlWithSort(`/collections/${c.handle}`)}
-                  className={`hover:underline ${
-                    pathname.includes(`/collections/${c.handle}`)
-                      ? "font-semibold"
-                      : ""
-                  }`}
-                >
-                  {c.title}
-                </LocalizedClientLink>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-    </aside>
+    <div className="flex small:flex-col gap-12 py-4 mb-8 small:px-0 pl-6 small:min-w-[250px] small:ml-[1.675rem]">
+      <SortProducts sortBy={sortBy} setQueryParams={setQueryParams} data-testid={dataTestId} />
+    </div>
   )
 }
+
+export default RefinementList
