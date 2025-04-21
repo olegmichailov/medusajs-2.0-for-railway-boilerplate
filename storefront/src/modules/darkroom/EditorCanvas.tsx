@@ -1,97 +1,62 @@
 // src/modules/darkroom/EditorCanvas.tsx
+'use client'
 
-"use client";
-
-import { Stage, Layer, Image as KonvaImage, Transformer } from "react-konva";
-import { useImage } from "react-konva";
-import { useRef, useState } from "react";
-import { useDarkroomStore } from "./store";
+import { Stage, Layer, Image as KonvaImage, Transformer } from 'react-konva'
+import { useRef, useEffect, useState } from 'react'
+import useImage from 'use-image'
+import { useDarkroomStore } from '@/modules/darkroom/store'
 
 interface UploadedImageProps {
-  src: string;
+  src: string
 }
 
 const UploadedImage = ({ src }: UploadedImageProps) => {
-  const [image] = useImage(src);
-  const shapeRef = useRef<any>(null);
-  const trRef = useRef<any>(null);
-  const [isSelected, setIsSelected] = useState(true);
+  const [image] = useImage(src)
+  const imageRef = useRef<any>(null)
+  const transformerRef = useRef<any>(null)
+
+  useEffect(() => {
+    if (imageRef.current && transformerRef.current) {
+      transformerRef.current.nodes([imageRef.current])
+      transformerRef.current.getLayer().batchDraw()
+    }
+  }, [image])
 
   return (
     <>
       <KonvaImage
         image={image}
-        ref={shapeRef}
-        x={150}
-        y={150}
+        ref={imageRef}
         draggable
-        onClick={() => setIsSelected(true)}
-        onTap={() => setIsSelected(true)}
-        onDragEnd={(e) => {
-          const node = shapeRef.current;
-          if (node) {
-            node.to({
-              x: e.target.x(),
-              y: e.target.y(),
-              duration: 0.2,
-            });
-          }
+        x={150}
+        y={100}
+      />
+      <Transformer
+        ref={transformerRef}
+        rotateEnabled
+        enabledAnchors={['top-left', 'top-right', 'bottom-left', 'bottom-right']}
+        boundBoxFunc={(oldBox, newBox) => {
+          if (newBox.width < 20 || newBox.height < 20) return oldBox
+          return newBox
         }}
       />
-      {isSelected && shapeRef.current && (
-        <Transformer
-          ref={trRef}
-          nodes={[shapeRef.current]}
-          boundBoxFunc={(oldBox, newBox) => {
-            // limit resize
-            if (newBox.width < 10 || newBox.height < 10) {
-              return oldBox;
-            }
-            return newBox;
-          }}
-          rotateEnabled
-          enabledAnchors={['top-left', 'top-right', 'bottom-left', 'bottom-right']}
-        />
-      )}
     </>
-  );
-};
+  )
+}
 
-const EditorCanvas = () => {
-  const [uploadedSrc, setUploadedSrc] = useState<string | null>(null);
-
-  const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = () => setUploadedSrc(reader.result as string);
-      reader.readAsDataURL(file);
-    }
-  };
+export const EditorCanvas = ({ imageUrl }: { imageUrl: string }) => {
+  const width = typeof window !== 'undefined' ? window.innerWidth : 1200
+  const height = typeof window !== 'undefined' ? window.innerHeight : 800
 
   return (
-    <div className="flex w-full h-full">
-      <div className="w-1/3 p-4">
-        <h1 className="text-2xl font-bold mb-4">DARKROOM EDITOR</h1>
-        <p className="mb-2">UPLOAD PRINT</p>
-        <input type="file" accept="image/*" onChange={handleUpload} />
-      </div>
-      <div className="w-2/3 h-screen relative">
-        <Stage width={window.innerWidth * 0.66} height={window.innerHeight}>
-          <Layer>
-            <KonvaImage
-              image={useImage("/mockups/MOCAP_FRONT_BACK.png")[0]}
-              x={0}
-              y={0}
-              width={window.innerWidth * 0.66}
-              height={window.innerHeight}
-            />
-            {uploadedSrc && <UploadedImage src={uploadedSrc} />}
-          </Layer>
-        </Stage>
-      </div>
+    <div className="w-full h-full">
+      <Stage width={width} height={height} className="border">
+        <Layer>
+          <UploadedImage src={imageUrl} />
+        </Layer>
+      </Stage>
     </div>
-  );
-};
+  )
+}
 
-export default EditorCanvas;
+export default EditorCanvas
