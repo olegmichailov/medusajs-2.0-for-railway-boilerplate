@@ -11,38 +11,12 @@ const DarkroomEditor = () => {
   const [images, setImages] = useState<any[]>([]);
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
   const [mockupType, setMockupType] = useState<"front" | "back">("front");
+  const [opacity, setOpacity] = useState(1);
+  const transformerRef = useRef<any>(null);
+
   const [mockupImage] = useImage(
     mockupType === "front" ? "/mockups/MOCAP_FRONT.png" : "/mockups/MOCAP_BACK.png"
   );
-
-  const transformerRef = useRef<any>(null);
-  const stageRef = useRef<any>(null);
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "c") {
-        if (selectedImageIndex !== null) {
-          const copied = { ...images[selectedImageIndex] };
-          copied.x += 20;
-          copied.y += 20;
-          copied.id = Date.now().toString();
-          setImages((prev) => [...prev, copied]);
-        }
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedImageIndex, images]);
-
-  useEffect(() => {
-    if (transformerRef.current && selectedImageIndex !== null) {
-      const selectedNode = stageRef.current.findOne(`#img-${images[selectedImageIndex].id}`);
-      if (selectedNode) {
-        transformerRef.current.nodes([selectedNode]);
-        transformerRef.current.getLayer().batchDraw();
-      }
-    }
-  }, [selectedImageIndex, images]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -54,10 +28,10 @@ const DarkroomEditor = () => {
         img.onload = () => {
           const newImage = {
             image: img,
-            x: 200,
-            y: 200,
-            width: img.width / 3,
-            height: img.height / 3,
+            x: CANVAS_WIDTH / 2 - img.width / 8,
+            y: CANVAS_HEIGHT / 2 - img.height / 8,
+            width: img.width / 4,
+            height: img.height / 4,
             opacity: 1,
             id: Date.now().toString(),
           };
@@ -69,29 +43,53 @@ const DarkroomEditor = () => {
     }
   };
 
-  const handleMockupChange = (type: "front" | "back") => {
-    setMockupType(type);
+  useEffect(() => {
+    if (transformerRef.current && selectedImageIndex !== null) {
+      const selectedNode = transformerRef.current.getStage().findOne(`#img-${selectedImageIndex}`);
+      if (selectedNode) {
+        transformerRef.current.nodes([selectedNode]);
+        transformerRef.current.getLayer().batchDraw();
+      }
+    }
+  }, [selectedImageIndex]);
+
+  const handleKeyDown = (e: KeyboardEvent) => {
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "c") {
+      if (selectedImageIndex !== null) {
+        const copied = { ...images[selectedImageIndex], id: Date.now().toString() };
+        setImages((prev) => [...prev, copied]);
+        setSelectedImageIndex(images.length);
+      }
+    }
   };
 
+  useEffect(() => {
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [images, selectedImageIndex]);
+
+  const handleDeselect = () => setSelectedImageIndex(null);
+
   return (
-    <div className="w-screen h-screen flex bg-white overflow-hidden">
-      <div className="w-1/2 p-10 flex flex-col justify-start">
+    <div className="w-screen h-screen flex bg-white">
+      <div className="w-1/2 p-10">
         <h1 className="text-2xl font-bold mb-6 uppercase tracking-wider">Darkroom Editor</h1>
         <div className="mb-4">
           <label className="block text-lg font-semibold mb-2">Upload Print</label>
           <input type="file" accept="image/*" onChange={handleFileChange} />
           <p className="text-sm text-gray-500 mt-2">Drag, scale, rotate print freely</p>
         </div>
-        <div className="mb-6">
-          <label className="block text-sm mb-1">Opacity</label>
+        <div className="mb-4">
+          <label className="block text-sm font-medium mb-1">Opacity: {Math.round(opacity * 100)}%</label>
           <input
             type="range"
             min="0"
             max="1"
             step="0.01"
-            value={selectedImageIndex !== null ? images[selectedImageIndex].opacity : 1}
-            className="w-full appearance-none h-1 bg-black"
+            value={opacity}
+            className="w-72 appearance-none bg-black h-[1px] [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-[2px] [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-black"
             onChange={(e) => {
+              setOpacity(Number(e.target.value));
               if (selectedImageIndex !== null) {
                 const newImages = [...images];
                 newImages[selectedImageIndex].opacity = Number(e.target.value);
@@ -101,29 +99,22 @@ const DarkroomEditor = () => {
           />
         </div>
         <div className="flex gap-2">
-          <button className="border px-4 py-2" onClick={() => handleMockupChange("front")}>Front</button>
-          <button className="border px-4 py-2" onClick={() => handleMockupChange("back")}>Back</button>
-          <button
-            className="bg-black text-white px-4 py-2"
-            onClick={() => console.log("Print", images)}
-          >
-            Print
-          </button>
+          <button className="border px-4 py-2" onClick={() => setMockupType("front")}>Front</button>
+          <button className="border px-4 py-2" onClick={() => setMockupType("back")}>Back</button>
+          <button className="bg-black text-white px-4 py-2" onClick={() => console.log("Print", images)}>Print</button>
         </div>
       </div>
+
       <div className="w-1/2 flex items-center justify-center">
-        <div className="border border-gray-400" style={{ width: 500, height: (500 * CANVAS_HEIGHT) / CANVAS_WIDTH }}>
+        <div className="w-[500px] aspect-[1985/1271] border">
           {mockupImage && (
             <Stage
-              ref={stageRef}
               width={CANVAS_WIDTH}
               height={CANVAS_HEIGHT}
-              scale={{ x: 500 / CANVAS_WIDTH, y: 500 / CANVAS_WIDTH }}
+              scaleX={500 / CANVAS_WIDTH}
+              scaleY={(500 / CANVAS_WIDTH)}
               onMouseDown={(e) => {
-                const clicked = e.target;
-                if (clicked === e.target.getStage()) {
-                  setSelectedImageIndex(null);
-                }
+                if (e.target === e.target.getStage()) handleDeselect();
               }}
             >
               <Layer>
@@ -131,7 +122,7 @@ const DarkroomEditor = () => {
                 {images.map((img, index) => (
                   <KonvaImage
                     key={img.id}
-                    id={`img-${img.id}`}
+                    id={`img-${index}`}
                     image={img.image}
                     x={img.x}
                     y={img.y}
