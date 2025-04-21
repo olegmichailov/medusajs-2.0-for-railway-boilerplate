@@ -1,68 +1,77 @@
-'use client'
+import React, { useRef, useState } from "react"
+import { Stage, Layer, Image as KonvaImage, Transformer } from "react-konva"
+import useImage from "use-image"
 
-import { useState, useRef } from 'react'
-import { Stage, Layer, Image as KonvaImage, Transformer } from 'react-konva'
-import useImage from 'use-image'
+const hoodie = "/mockups/hoodie_front.png"
 
 export default function EditorCanvas() {
-  const [image, setImage] = useState<HTMLImageElement | null>(null)
-  const [selected, setSelected] = useState(true)
+  const [uploadedImage, setUploadedImage] = useState<string | null>(null)
+  const [image] = useImage(uploadedImage || "")
+  const [hoodieImage] = useImage(hoodie)
   const imageRef = useRef<any>(null)
-  const trRef = useRef<any>(null)
+  const transformerRef = useRef<any>(null)
 
-  const [mockup] = useImage('/mockups/MOCAP_FRONT_BACK.png')
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
     const reader = new FileReader()
-    reader.onload = () => {
-      const img = new window.Image()
-      img.src = reader.result as string
-      img.onload = () => setImage(img)
+    reader.onloadend = () => {
+      setUploadedImage(reader.result as string)
     }
     reader.readAsDataURL(file)
   }
 
   return (
-    <div className="flex w-full h-[80vh]">
-      <div className="w-1/3 p-4">
-        <h2 className="text-lg font-bold mb-4">UPLOAD PRINT</h2>
-        <input type="file" accept="image/*" onChange={handleFileChange} />
-        <p className="text-sm mt-2">Drag, scale, rotate print freely</p>
+    <div className="w-full flex flex-col items-center">
+      <div className="mb-4 text-center">
+        <label className="text-lg font-semibold">Upload Print</label>
+        <input
+          type="file"
+          accept="image/*"
+          onChange={handleUpload}
+          className="block mt-2"
+        />
+        <p className="text-sm mt-1 text-gray-500">
+          Drag, scale, rotate print freely
+        </p>
       </div>
-      <div className="w-2/3">
-        <Stage width={800} height={800}>
-          <Layer>
-            {mockup && <KonvaImage image={mockup} />}
-            {image && (
-              <>
-                <KonvaImage
-                  image={image}
-                  ref={imageRef}
-                  x={250}
-                  y={300}
-                  width={300}
-                  draggable
-                  onClick={() => setSelected(true)}
-                />
-                {selected && (
-                  <Transformer
-                    ref={trRef}
-                    nodes={[imageRef.current]}
-                    boundBoxFunc={(oldBox, newBox) => {
-                      if (newBox.width < 20 || newBox.height < 20) {
-                        return oldBox
-                      }
-                      return newBox
-                    }}
-                  />
-                )}
-              </>
-            )}
-          </Layer>
-        </Stage>
-      </div>
+
+      <Stage
+        width={window.innerWidth * 0.8}
+        height={window.innerHeight * 0.75}
+        className="border"
+      >
+        <Layer>
+          {hoodieImage && (
+            <KonvaImage
+              image={hoodieImage}
+              width={500}
+              height={(hoodieImage.height / hoodieImage.width) * 500}
+              x={window.innerWidth * 0.4 - 250}
+              y={20}
+            />
+          )}
+
+          {image && (
+            <>
+              <KonvaImage
+                image={image}
+                draggable
+                ref={imageRef}
+                x={window.innerWidth * 0.4 - 100}
+                y={150}
+                width={200}
+                height={200}
+                onClick={() => {
+                  transformerRef.current.nodes([imageRef.current])
+                  transformerRef.current.getLayer().batchDraw()
+                }}
+              />
+              <Transformer ref={transformerRef} />
+            </>
+          )}
+        </Layer>
+      </Stage>
     </div>
   )
 }
