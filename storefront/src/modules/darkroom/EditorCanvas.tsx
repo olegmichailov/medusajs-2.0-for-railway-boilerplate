@@ -1,4 +1,3 @@
-// src/app/[countryCode]/darkroom/page.tsx
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -7,142 +6,149 @@ import useImage from "use-image";
 
 const CANVAS_WIDTH = 985;
 const CANVAS_HEIGHT = 1271;
-const DISPLAY_SCALE = 0.5;
 
-interface UploadedLayer {
-  image: HTMLImageElement;
-  opacity: number;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  rotation: number;
-}
+const SCALE_FACTOR = 0.5;
 
 const DarkroomEditor = () => {
-  const [uploadedImages, setUploadedImages] = useState<UploadedLayer[]>([]);
-  const [currentImage, setCurrentImage] = useState<string | null>(null);
-  const [konvaImage] = useImage(currentImage || "");
-  const [mockupImage, setMockupImage] = useImage("/mockups/MOCAP_FRONT.png");
-  const imageRef = useRef<any>(null);
-  const transformerRef = useRef<any>(null);
-  const [opacity, setOpacity] = useState(1);
+  const [images, setImages] = useState<any[]>([]);
+  const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
+  const [mockupType, setMockupType] = useState<"front" | "back">("front");
+  const [mockupImage] = useImage(
+    mockupType === "front" ? "/mockups/MOCAP_FRONT.png" : "/mockups/MOCAP_BACK.png"
+  );
 
-  useEffect(() => {
-    if (imageRef.current && transformerRef.current) {
-      transformerRef.current.nodes([imageRef.current]);
-      transformerRef.current.getLayer().batchDraw();
-    }
-  }, [konvaImage]);
+  const transformerRef = useRef<any>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
       reader.onload = () => {
-        setCurrentImage(reader.result as string);
+        const img = new window.Image();
+        img.src = reader.result as string;
+        img.onload = () => {
+          const newImage = {
+            image: img,
+            x: (CANVAS_WIDTH - img.width / 4) / 2,
+            y: (CANVAS_HEIGHT - img.height / 4) / 2,
+            width: img.width / 4,
+            height: img.height / 4,
+            opacity: 1,
+            id: Date.now().toString(),
+          };
+          setImages((prev) => [...prev, newImage]);
+          setSelectedImageIndex(images.length);
+        };
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const handleConfirmLayer = () => {
-    if (konvaImage) {
-      const imageNode = imageRef.current;
-      const { x, y, width, height, rotation } = imageNode;
-      setUploadedImages([
-        ...uploadedImages,
-        {
-          image: konvaImage,
-          opacity,
-          x,
-          y,
-          width,
-          height,
-          rotation
-        }
+  useEffect(() => {
+    if (transformerRef.current && selectedImageIndex !== null) {
+      transformerRef.current.nodes([
+        transformerRef.current.getStage().findOne(`#img-${selectedImageIndex}`)
       ]);
-      setCurrentImage(null);
-      setOpacity(1);
+      transformerRef.current.getLayer().batchDraw();
     }
+  }, [selectedImageIndex]);
+
+  const handleDeselect = () => {
+    setSelectedImageIndex(null);
   };
 
-  const switchMockup = (type: "front" | "back") => {
-    const newMockup = type === "front" ? "/mockups/MOCAP_FRONT.png" : "/mockups/MOCAP_BACK.png";
-    setMockupImage(null);
-    const [newImg] = useImage(newMockup);
-    setMockupImage(newImg);
+  const updateOpacity = (value: number) => {
+    if (selectedImageIndex !== null) {
+      const newImages = [...images];
+      newImages[selectedImageIndex].opacity = value;
+      setImages(newImages);
+    }
   };
 
   return (
     <div className="w-screen h-screen flex bg-white">
-      {/* Left UI */}
       <div className="w-1/2 p-10">
-        <h1 className="text-2xl font-bold mb-6 uppercase tracking-wider">Darkroom Editor</h1>
+        <h1 className="text-4xl font-[505] tracking-wider uppercase mb-6">Darkroom Editor</h1>
         <div className="mb-4">
-          <label className="block text-lg font-semibold mb-2">Upload Print</label>
+          <label className="block text-lg font-semibold mb-2 uppercase">Upload Print</label>
           <input type="file" accept="image/*" onChange={handleFileChange} />
           <p className="text-sm text-gray-500 mt-2">Drag, scale, rotate print freely</p>
         </div>
         <div className="mb-4">
-          <label className="block text-sm font-medium mb-1">Opacity</label>
+          <label className="block text-sm font-medium uppercase mb-1">Opacity</label>
           <input
             type="range"
             min="0"
             max="1"
             step="0.01"
-            value={opacity}
-            onChange={(e) => setOpacity(parseFloat(e.target.value))}
+            value={selectedImageIndex !== null ? images[selectedImageIndex].opacity : 1}
+            onChange={(e) => updateOpacity(Number(e.target.value))}
             className="w-full"
           />
         </div>
-        <div className="flex space-x-4">
-          <button onClick={() => switchMockup("front")} className="border px-4 py-2">Front</button>
-          <button onClick={() => switchMockup("back")} className="border px-4 py-2">Back</button>
-          <button onClick={handleConfirmLayer} className="bg-black text-white px-4 py-2">Print</button>
+        <div className="flex gap-3">
+          <button
+            className="border px-4 py-2 uppercase text-sm"
+            onClick={() => setMockupType("front")}
+          >
+            Front
+          </button>
+          <button
+            className="border px-4 py-2 uppercase text-sm"
+            onClick={() => setMockupType("back")}
+          >
+            Back
+          </button>
+          <button
+            className="bg-black text-white px-4 py-2 uppercase text-sm"
+            onClick={() => console.log("Print", images)}
+          >
+            Print
+          </button>
         </div>
       </div>
 
-      {/* Right Canvas */}
       <div className="w-1/2 flex items-center justify-center">
-        {mockupImage && (
-          <div style={{ width: CANVAS_WIDTH * DISPLAY_SCALE, height: CANVAS_HEIGHT * DISPLAY_SCALE }}>
-            <Stage width={CANVAS_WIDTH} height={CANVAS_HEIGHT} scale={{ x: DISPLAY_SCALE, y: DISPLAY_SCALE }}>
+        <div className="border border-dashed border-gray-400" style={{ transform: `scale(${SCALE_FACTOR})`, transformOrigin: 'top left' }}>
+          {mockupImage && (
+            <Stage
+              width={CANVAS_WIDTH}
+              height={CANVAS_HEIGHT}
+              onMouseDown={(e) => {
+                const clicked = e.target;
+                if (clicked === e.target.getStage()) {
+                  handleDeselect();
+                }
+              }}
+            >
               <Layer>
-                <KonvaImage image={mockupImage} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} />
-
-                {uploadedImages.map((layer, i) => (
+                <KonvaImage
+                  image={mockupImage}
+                  width={CANVAS_WIDTH}
+                  height={CANVAS_HEIGHT}
+                />
+                {images.map((img, index) => (
                   <KonvaImage
-                    key={i}
-                    image={layer.image}
-                    x={layer.x}
-                    y={layer.y}
-                    width={layer.width}
-                    height={layer.height}
-                    opacity={layer.opacity}
-                    rotation={layer.rotation}
+                    key={img.id}
+                    id={`img-${index}`}
+                    image={img.image}
+                    x={img.x}
+                    y={img.y}
+                    width={img.width}
+                    height={img.height}
+                    opacity={img.opacity}
+                    draggable
+                    onClick={() => setSelectedImageIndex(index)}
+                    onTap={() => setSelectedImageIndex(index)}
                   />
                 ))}
-
-                {konvaImage && (
-                  <>
-                    <KonvaImage
-                      image={konvaImage}
-                      ref={imageRef}
-                      x={100}
-                      y={100}
-                      width={200}
-                      height={200}
-                      opacity={opacity}
-                      draggable
-                    />
-                    <Transformer ref={transformerRef} />
-                  </>
+                {selectedImageIndex !== null && (
+                  <Transformer ref={transformerRef} rotateEnabled={true} />
                 )}
               </Layer>
             </Stage>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
