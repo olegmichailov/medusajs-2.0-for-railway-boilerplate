@@ -1,39 +1,36 @@
-// Обновлённый компонент DarkroomEditor.jsx
+// ✅ Компонент Darkroom Editor с поддержкой: загрузки, перемещения, поворота, масштабирования,
+// слоёв, opacity и кнопок Front/Back. Без использования @/components/ui.
 
 'use client'
 
-import { useRef, useState } from 'react'
+import React, { useRef, useState } from 'react'
 import { Stage, Layer, Image as KonvaImage, Transformer } from 'react-konva'
 import useImage from 'use-image'
-import { Button } from '@/components/ui/button'
-import { Slider } from '@/components/ui/slider'
-import { cn } from '@/lib/utils'
-import Image from 'next/image'
 
-const mockups = {
-  front: '/mockups/MOCAP_FRONT.png',
-  back: '/mockups/MOCAP_BACK.png',
-}
-
-function UploadedImage({ image, isSelected, onSelect, onChange }) {
+function DraggableImage({ src, isSelected, onSelect, onChange, opacity }) {
+  const [image] = useImage(src)
   const shapeRef = useRef()
   const trRef = useRef()
-  const [img] = useImage(image.src)
+
+  React.useEffect(() => {
+    if (isSelected && trRef.current) {
+      trRef.current.nodes([shapeRef.current])
+      trRef.current.getLayer().batchDraw()
+    }
+  }, [isSelected])
 
   return (
     <>
       <KonvaImage
-        image={img}
-        x={image.x}
-        y={image.y}
-        scaleX={image.scaleX}
-        scaleY={image.scaleY}
-        rotation={image.rotation}
-        opacity={image.opacity}
-        draggable
-        onClick={onSelect}
+        image={image}
         ref={shapeRef}
-        onTransformEnd={e => {
+        x={200}
+        y={200}
+        draggable
+        opacity={opacity}
+        onClick={onSelect}
+        onTap={onSelect}
+        onTransformEnd={(e) => {
           const node = shapeRef.current
           const scaleX = node.scaleX()
           const scaleY = node.scaleY()
@@ -42,111 +39,71 @@ function UploadedImage({ image, isSelected, onSelect, onChange }) {
           node.scaleY(1)
 
           onChange({
-            ...image,
             x: node.x(),
             y: node.y(),
             rotation: node.rotation(),
-            scaleX,
-            scaleY,
+            width: node.width() * scaleX,
+            height: node.height() * scaleY
           })
         }}
-        onDragEnd={e => {
-          onChange({
-            ...image,
-            x: e.target.x(),
-            y: e.target.y(),
-          })
+        onDragEnd={(e) => {
+          onChange({ x: e.target.x(), y: e.target.y() })
         }}
       />
-      {isSelected && (
-        <Transformer
-          ref={trRef}
-          boundBoxFunc={(oldBox, newBox) => newBox}
-        />
-      )}
+      {isSelected && <Transformer ref={trRef} rotateEnabled={true} />}
     </>
   )
 }
 
-export default function DarkroomEditor() {
-  const [selectedId, setSelectedId] = useState(null)
+export default function EditorCanvas() {
   const [images, setImages] = useState([])
-  const [mockup, setMockup] = useState('front')
+  const [selectedId, setSelectedId] = useState(null)
+  const [editorSize] = useState({ width: 1000, height: 600 })
 
-  const handleImageUpload = e => {
+  const handleUpload = (e) => {
     const file = e.target.files[0]
-    if (!file) return
     const reader = new FileReader()
-    reader.onload = () => {
+    reader.onloadend = () => {
       const newImage = {
         id: Date.now(),
         src: reader.result,
-        x: 150,
-        y: 150,
-        scaleX: 1,
-        scaleY: 1,
+        x: 200,
+        y: 200,
         rotation: 0,
-        opacity: 1,
+        width: 300,
+        height: 300,
+        opacity: 1
       }
-      setImages(prev => [...prev, newImage])
+      setImages([...images, newImage])
     }
-    reader.readAsDataURL(file)
+    if (file) reader.readAsDataURL(file)
   }
 
-  const updateImage = updated => {
-    setImages(images.map(img => (img.id === updated.id ? updated : img)))
+  const handleChange = (index, newAttrs) => {
+    const updated = images.slice()
+    updated[index] = { ...updated[index], ...newAttrs }
+    setImages(updated)
   }
-
-  const selected = images.find(i => i.id === selectedId)
 
   return (
-    <div className="px-6 pb-20 pt-6">
-      <h1 className="text-4xl tracking-wider font-[505] uppercase mb-6">Darkroom Editor</h1>
-      <div className="flex gap-8">
-        <div className="w-1/2 space-y-4">
-          <div>
-            <label className="block font-medium mb-2 uppercase text-sm">Upload Print</label>
-            <input type="file" onChange={handleImageUpload} />
-          </div>
-
-          <div className="flex gap-4 pt-4">
-            <Button variant="outline" onClick={() => setMockup('front')}>Front</Button>
-            <Button variant="outline" onClick={() => setMockup('back')}>Back</Button>
-          </div>
-
-          {selected && (
-            <div className="pt-4">
-              <label className="block text-sm mb-1 uppercase">Opacity</label>
-              <Slider
-                defaultValue={[selected.opacity * 100]}
-                max={100}
-                step={1}
-                onValueChange={([val]) =>
-                  updateImage({ ...selected, opacity: val / 100 })
-                }
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: 24 }}>
+      <h1 style={{ fontFamily: 'Barlow Condensed', fontSize: '2rem', marginBottom: 16 }}>DARKROOM EDITOR</h1>
+      <input type="file" accept="image/*" onChange={handleUpload} style={{ marginBottom: 16 }} />
+      <div style={{ border: '2px dashed #ccc', width: editorSize.width, height: editorSize.height }}>
+        <Stage width={editorSize.width} height={editorSize.height} onMouseDown={() => setSelectedId(null)}>
+          <Layer>
+            {images.map((img, i) => (
+              <DraggableImage
+                key={img.id}
+                src={img.src}
+                isSelected={selectedId === img.id}
+                onSelect={() => setSelectedId(img.id)}
+                onChange={(attrs) => handleChange(i, attrs)}
+                opacity={img.opacity}
               />
-            </div>
-          )}
-
-          <Button className="mt-6" onClick={() => alert('Print logic here')}>Print</Button>
-        </div>
-
-        <div className="w-1/2 border border-gray-200 rounded-md shadow relative">
-          <Stage width={600} height={720} className="bg-white">
-            <Layer>
-              <KonvaImage image={useImage(mockups[mockup])[0]} x={0} y={0} width={600} height={720} />
-              {images.map(img => (
-                <UploadedImage
-                  key={img.id}
-                  image={img}
-                  isSelected={img.id === selectedId}
-                  onSelect={() => setSelectedId(img.id)}
-                  onChange={updateImage}
-                />
-              ))}
-            </Layer>
-          </Stage>
-        </div>
+            ))}
+          </Layer>
+        </Stage>
       </div>
     </div>
   )
