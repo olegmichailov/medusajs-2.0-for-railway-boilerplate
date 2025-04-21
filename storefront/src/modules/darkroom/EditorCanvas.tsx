@@ -16,7 +16,33 @@ const DarkroomEditor = () => {
   );
 
   const transformerRef = useRef<any>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const stageRef = useRef<any>(null);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "c") {
+        if (selectedImageIndex !== null) {
+          const copied = { ...images[selectedImageIndex] };
+          copied.x += 20;
+          copied.y += 20;
+          copied.id = Date.now().toString();
+          setImages((prev) => [...prev, copied]);
+        }
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedImageIndex, images]);
+
+  useEffect(() => {
+    if (transformerRef.current && selectedImageIndex !== null) {
+      const selectedNode = stageRef.current.findOne(`#img-${images[selectedImageIndex].id}`);
+      if (selectedNode) {
+        transformerRef.current.nodes([selectedNode]);
+        transformerRef.current.getLayer().batchDraw();
+      }
+    }
+  }, [selectedImageIndex, images]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -28,10 +54,10 @@ const DarkroomEditor = () => {
         img.onload = () => {
           const newImage = {
             image: img,
-            x: CANVAS_WIDTH / 2 - img.width / 8,
-            y: CANVAS_HEIGHT / 2 - img.height / 8,
-            width: img.width / 4,
-            height: img.height / 4,
+            x: 200,
+            y: 200,
+            width: img.width / 3,
+            height: img.height / 3,
             opacity: 1,
             id: Date.now().toString(),
           };
@@ -43,48 +69,28 @@ const DarkroomEditor = () => {
     }
   };
 
-  useEffect(() => {
-    if (transformerRef.current && selectedImageIndex !== null) {
-      const node = transformerRef.current.getStage().findOne(`#img-${selectedImageIndex}`);
-      if (node) {
-        transformerRef.current.nodes([node]);
-        transformerRef.current.getLayer().batchDraw();
-      }
-    }
-  }, [selectedImageIndex]);
-
-  const handleDeselect = () => {
-    setSelectedImageIndex(null);
+  const handleMockupChange = (type: "front" | "back") => {
+    setMockupType(type);
   };
-
-  const handleKeyDown = (e: KeyboardEvent) => {
-    if (e.key === "Enter" && selectedImageIndex !== null) {
-      setSelectedImageIndex(null);
-    }
-  };
-
-  useEffect(() => {
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedImageIndex]);
 
   return (
     <div className="w-screen h-screen flex bg-white overflow-hidden">
-      <div className="w-1/2 p-10">
+      <div className="w-1/2 p-10 flex flex-col justify-start">
         <h1 className="text-2xl font-bold mb-6 uppercase tracking-wider">Darkroom Editor</h1>
         <div className="mb-4">
-          <label className="block text-lg font-semibold mb-2 uppercase">Upload Print</label>
+          <label className="block text-lg font-semibold mb-2">Upload Print</label>
           <input type="file" accept="image/*" onChange={handleFileChange} />
           <p className="text-sm text-gray-500 mt-2">Drag, scale, rotate print freely</p>
         </div>
-        <div className="mb-4">
-          <label className="block text-sm font-medium uppercase">Opacity</label>
+        <div className="mb-6">
+          <label className="block text-sm mb-1">Opacity</label>
           <input
             type="range"
             min="0"
             max="1"
             step="0.01"
             value={selectedImageIndex !== null ? images[selectedImageIndex].opacity : 1}
+            className="w-full appearance-none h-1 bg-black"
             onChange={(e) => {
               if (selectedImageIndex !== null) {
                 const newImages = [...images];
@@ -95,36 +101,37 @@ const DarkroomEditor = () => {
           />
         </div>
         <div className="flex gap-2">
-          <button className="border px-4 py-2 uppercase" onClick={() => setMockupType("front")}>Front</button>
-          <button className="border px-4 py-2 uppercase" onClick={() => setMockupType("back")}>Back</button>
-          <button className="bg-black text-white px-4 py-2 uppercase" onClick={() => console.log("Print", images)}>Print</button>
+          <button className="border px-4 py-2" onClick={() => handleMockupChange("front")}>Front</button>
+          <button className="border px-4 py-2" onClick={() => handleMockupChange("back")}>Back</button>
+          <button
+            className="bg-black text-white px-4 py-2"
+            onClick={() => console.log("Print", images)}
+          >
+            Print
+          </button>
         </div>
       </div>
       <div className="w-1/2 flex items-center justify-center">
-        <div
-          ref={containerRef}
-          className="border border-gray-300"
-          style={{ width: "500px", height: "640px" }}
-        >
+        <div className="border border-gray-400" style={{ width: 500, height: (500 * CANVAS_HEIGHT) / CANVAS_WIDTH }}>
           {mockupImage && (
             <Stage
+              ref={stageRef}
               width={CANVAS_WIDTH}
               height={CANVAS_HEIGHT}
-              scale={{ x: 500 / CANVAS_WIDTH, y: 640 / CANVAS_HEIGHT }}
+              scale={{ x: 500 / CANVAS_WIDTH, y: 500 / CANVAS_WIDTH }}
               onMouseDown={(e) => {
                 const clicked = e.target;
                 if (clicked === e.target.getStage()) {
-                  handleDeselect();
+                  setSelectedImageIndex(null);
                 }
               }}
-              onDblClick={() => handleDeselect()}
             >
               <Layer>
                 <KonvaImage image={mockupImage} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} />
                 {images.map((img, index) => (
                   <KonvaImage
                     key={img.id}
-                    id={`img-${index}`}
+                    id={`img-${img.id}`}
                     image={img.image}
                     x={img.x}
                     y={img.y}
@@ -136,9 +143,7 @@ const DarkroomEditor = () => {
                     onTap={() => setSelectedImageIndex(index)}
                   />
                 ))}
-                {selectedImageIndex !== null && (
-                  <Transformer ref={transformerRef} rotateEnabled={true} />
-                )}
+                {selectedImageIndex !== null && <Transformer ref={transformerRef} rotateEnabled={true} />}
               </Layer>
             </Stage>
           )}
