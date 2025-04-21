@@ -1,14 +1,10 @@
-import repeat from "@lib/util/repeat"
 import SkeletonProductPreview from "@modules/skeletons/components/skeleton-product-preview"
 
 const SkeletonProductGrid = () => {
   return (
-    <ul
-      className="grid grid-cols-2 small:grid-cols-3 medium:grid-cols-4 gap-x-4 gap-y-10 px-6 sm:px-0"
-      data-testid="products-list-loader"
-    >
-      {repeat(8).map((index) => (
-        <li key={index}>
+    <ul className="grid grid-cols-1 small:grid-cols-2 gap-x-6 gap-y-10">
+      {Array.from(Array(4).keys()).map((i) => (
+        <li key={i}>
           <SkeletonProductPreview />
         </li>
       ))}
