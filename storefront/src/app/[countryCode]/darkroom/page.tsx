@@ -1,104 +1,92 @@
-// storefront/src/app/[countryCode]/darkroom/page.tsx
-
 "use client"
 
 import { useEffect, useRef, useState } from "react"
 import { fabric } from "fabric"
-import { HexColorPicker } from "react-colorful"
 import { usePathname } from "next/navigation"
 
-export default function Darkroom() {
+const mockupImage = "/mockups/il_fullxfull.6008848563_7wnj.avif"
+
+export default function DarkroomEditor() {
   const pathname = usePathname()
   const countryCode = pathname.split("/")[1] || "de"
-  const canvasRef = useRef<HTMLCanvasElement>(null)
+
+  const canvasRef = useRef(null)
   const fabricRef = useRef<fabric.Canvas | null>(null)
-
-  const [mode, setMode] = useState<"select" | "draw" | "text">("select")
-  const [color, setColor] = useState("#000000")
-  const [brushSize, setBrushSize] = useState(4)
-  const [textValue, setTextValue] = useState("")
   const [side, setSide] = useState<"front" | "back">("front")
-
-  const mockup = "/mockups/il_fullxfull.6008848563_7wnj.avif"
-
-  useEffect(() => {
-    if (canvasRef.current) {
-      const canvas = new fabric.Canvas(canvasRef.current, {
-        width: 600,
-        height: 800,
-        selection: true,
-      })
-      fabricRef.current = canvas
-
-      fabric.Image.fromURL(mockup, (img) => {
-        const half = img.width! / 2
-        img.set({
-          cropX: side === "front" ? 0 : half,
-          cropY: 0,
-          width: half,
-          height: img.height!,
-          scaleX: 600 / half,
-          scaleY: 800 / img.height!,
-          selectable: false,
-          evented: false,
-        })
-        canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas))
-      })
-    }
-    return () => {
-      fabricRef.current?.dispose()
-    }
-  }, [side])
+  const [uploadedImage, setUploadedImage] = useState<string | null>(null)
 
   useEffect(() => {
-    const canvas = fabricRef.current
-    if (!canvas) return
-    canvas.isDrawingMode = mode === "draw"
-    if (mode === "draw") {
-      canvas.freeDrawingBrush = new fabric.PencilBrush(canvas)
-      canvas.freeDrawingBrush.color = color
-      canvas.freeDrawingBrush.width = brushSize
-    }
-  }, [mode, color, brushSize])
+    const canvasEl = canvasRef.current
+    if (!canvasEl) return
 
-  const addText = () => {
-    if (!textValue.trim()) return
-    const canvas = fabricRef.current
-    const text = new fabric.Textbox(textValue, {
-      left: 100,
-      top: 100,
-      fontSize: 28,
-      fill: color,
-      fontFamily: "Arial",
-      editable: true,
+    const canvas = new fabric.Canvas(canvasEl, {
+      preserveObjectStacking: true,
+      selection: true,
     })
-    canvas?.add(text)
-    setTextValue("")
+
+    fabricRef.current = canvas
+
+    fabric.Image.fromURL(mockupImage, (img) => {
+      img.scaleToWidth(450)
+      canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas))
+    })
+
+    return () => {
+      canvas.dispose()
+    }
+  }, [])
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => {
+      const imageUrl = reader.result as string
+      setUploadedImage(imageUrl)
+      fabric.Image.fromURL(imageUrl, (img) => {
+        img.set({
+          left: 150,
+          top: 150,
+          scaleX: 0.5,
+          scaleY: 0.5,
+          hasControls: true,
+          hasBorders: true,
+        })
+        fabricRef.current?.add(img).setActiveObject(img)
+      })
+    }
+    reader.readAsDataURL(file)
   }
 
   const handlePrint = () => {
     const canvas = fabricRef.current
     if (!canvas) return
-    const dataUrl = canvas.toDataURL({ format: "png", multiplier: 5 })
+
+    const exportCanvas = canvas.toDataURL({ format: "png", multiplier: 4 })
     const link = document.createElement("a")
-    link.download = `gmorkl_darkroom_${side}.png`
-    link.href = dataUrl
+    link.href = exportCanvas
+    link.download = `gmorkl_${side}_mockup.png`
     link.click()
   }
 
   return (
-    <div className="px-4 py-10 max-w-screen-lg mx-auto font-sans">
-      <h1 className="text-4xl uppercase tracking-wider font-medium mb-6">
+    <div className="px-6 py-10 max-w-6xl mx-auto font-sans">
+      <h1 className="text-4xl tracking-wider font-medium uppercase mb-6">
         Darkroom Editor
       </h1>
 
-      <div className="flex flex-col md:flex-row gap-10">
-        {/* Controls */}
-        <div className="flex flex-col gap-4 w-full md:w-1/3">
+      <div className="flex flex-col sm:flex-row gap-6">
+        <div className="flex flex-col gap-4 w-full sm:w-1/3">
+          <input
+            type="file"
+            onChange={handleImageUpload}
+            className="text-sm border border-black px-2 py-1 cursor-pointer uppercase tracking-wider"
+          />
+
           <div className="flex gap-2">
             <button
               onClick={() => setSide("front")}
-              className={`border px-3 py-1 uppercase text-sm tracking-wide ${
+              className={`px-4 py-1 border uppercase text-sm tracking-wider transition ${
                 side === "front" ? "bg-black text-white" : ""
               }`}
             >
@@ -106,7 +94,7 @@ export default function Darkroom() {
             </button>
             <button
               onClick={() => setSide("back")}
-              className={`border px-3 py-1 uppercase text-sm tracking-wide ${
+              className={`px-4 py-1 border uppercase text-sm tracking-wider transition ${
                 side === "back" ? "bg-black text-white" : ""
               }`}
             >
@@ -114,80 +102,21 @@ export default function Darkroom() {
             </button>
           </div>
 
-          <div className="flex gap-2">
-            <button
-              onClick={() => setMode("select")}
-              className={`border px-3 py-1 uppercase text-sm tracking-wide ${
-                mode === "select" ? "bg-black text-white" : ""
-              }`}
-            >
-              Move
-            </button>
-            <button
-              onClick={() => setMode("draw")}
-              className={`border px-3 py-1 uppercase text-sm tracking-wide ${
-                mode === "draw" ? "bg-black text-white" : ""
-              }`}
-            >
-              Draw
-            </button>
-            <button
-              onClick={() => setMode("text")}
-              className={`border px-3 py-1 uppercase text-sm tracking-wide ${
-                mode === "text" ? "bg-black text-white" : ""
-              }`}
-            >
-              Text
-            </button>
-          </div>
-
-          {mode === "text" && (
-            <>
-              <input
-                type="text"
-                value={textValue}
-                onChange={(e) => setTextValue(e.target.value)}
-                placeholder="Enter text"
-                className="border p-2 text-sm"
-              />
-              <button
-                onClick={addText}
-                className="border px-3 py-1 text-sm uppercase hover:bg-black hover:text-white"
-              >
-                Add Text
-              </button>
-            </>
-          )}
-
-          <div>
-            <label className="block text-sm uppercase mb-1">Color</label>
-            <HexColorPicker color={color} onChange={setColor} />
-          </div>
-
-          {mode === "draw" && (
-            <>
-              <label className="text-sm uppercase">Brush Size</label>
-              <input
-                type="range"
-                min="1"
-                max="20"
-                value={brushSize}
-                onChange={(e) => setBrushSize(parseInt(e.target.value))}
-              />
-            </>
-          )}
-
           <button
             onClick={handlePrint}
-            className="border px-4 py-2 uppercase text-sm tracking-wide mt-6 hover:bg-black hover:text-white"
+            className="mt-4 px-6 py-2 border border-black uppercase tracking-wider hover:bg-black hover:text-white"
           >
             Print
           </button>
         </div>
 
-        {/* Canvas */}
-        <div className="w-full md:w-2/3 border border-black">
-          <canvas ref={canvasRef} width={600} height={800} className="w-full h-auto" />
+        <div className="flex-1">
+          <canvas
+            ref={canvasRef}
+            width={600}
+            height={750}
+            className="border border-black w-full"
+          />
         </div>
       </div>
     </div>
