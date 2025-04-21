@@ -1,75 +1,89 @@
-import { useEffect, useRef, useState } from "react"
-import { fabric } from "fabric"
+// storefront/src/modules/darkroom/components/editor-canvas.tsx
 
-export default function DarkroomEditor() {
-  const canvasRef = useRef(null)
-  const [canvas, setCanvas] = useState<fabric.Canvas | null>(null)
-  const [imageURL, setImageURL] = useState<string | null>(null)
+"use client"
 
+import { useRef, useEffect } from "react"
+import { Stage, Layer, Image as KonvaImage } from "react-konva"
+import useImage from "use-image"
+import { useDarkroomStore } from "../store"
+
+export default function EditorCanvas() {
+  const {
+    mockupSrc,
+    uploadedImage,
+    imageProps,
+    setImageProps,
+    canvasSize,
+  } = useDarkroomStore()
+
+  const [mockup] = useImage(mockupSrc)
+  const [print] = useImage(uploadedImage || "")
+
+  const imageRef = useRef<any>(null)
+  const stageRef = useRef<any>(null)
+
+  // Обновление позиции при драг-н-дропе
   useEffect(() => {
-    if (!canvasRef.current) return
-    const fabricCanvas = new fabric.Canvas(canvasRef.current, {
-      width: 900,
-      height: 1080,
-      backgroundColor: "white",
-      preserveObjectStacking: true,
+    if (!imageRef.current) return
+    imageRef.current.to({
+      x: imageProps.x,
+      y: imageProps.y,
+      scaleX: imageProps.scale,
+      scaleY: imageProps.scale,
+      rotation: imageProps.rotation,
     })
-
-    fabric.Image.fromURL("/mockups/MOCAP_FRONT_BACK.png", (img) => {
-      const frontHalf = new fabric.Image(img.getElement(), {
-        left: 0,
-        top: 0,
-        scaleX: 0.5,
-        scaleY: 0.5,
-        selectable: false,
-      })
-      fabricCanvas.setBackgroundImage(frontHalf, fabricCanvas.renderAll.bind(fabricCanvas))
-    })
-
-    setCanvas(fabricCanvas)
-
-    return () => {
-      fabricCanvas.dispose()
-    }
-  }, [])
-
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    const reader = new FileReader()
-    reader.onload = () => {
-      const dataURL = reader.result as string
-      setImageURL(dataURL)
-      if (!canvas) return
-
-      fabric.Image.fromURL(dataURL, (img) => {
-        img.set({
-          left: 300,
-          top: 300,
-          scaleX: 0.5,
-          scaleY: 0.5,
-          cornerColor: "black",
-          cornerSize: 10,
-        })
-        canvas.add(img)
-        canvas.setActiveObject(img)
-        canvas.renderAll()
-      })
-    }
-    reader.readAsDataURL(file)
-  }
+  }, [imageProps])
 
   return (
-    <div className="flex w-full min-h-screen">
-      <div className="w-1/3 p-6">
-        <h1 className="text-3xl font-bold mb-4">DARKROOM EDITOR</h1>
-        <label className="block mb-2">UPLOAD PRINT</label>
-        <input type="file" accept="image/*" onChange={handleFileUpload} />
-        <p className="text-sm mt-2 text-gray-600">Drag, scale, rotate print freely</p>
-      </div>
-      <div className="flex-1 flex items-center justify-center p-6">
-        <canvas ref={canvasRef} />
-      </div>
+    <div className="w-full">
+      <Stage
+        width={canvasSize.width}
+        height={canvasSize.height}
+        ref={stageRef}
+        className="border border-white bg-[#0b0b0b] mx-auto"
+      >
+        <Layer>
+          {/* Мокап худи (фон) */}
+          {mockup && (
+            <KonvaImage
+              image={mockup}
+              width={canvasSize.width}
+              height={canvasSize.height}
+              listening={false}
+            />
+          )}
+
+          {/* Загруженное изображение принта */}
+          {print && (
+            <KonvaImage
+              image={print}
+              draggable
+              ref={imageRef}
+              x={imageProps.x}
+              y={imageProps.y}
+              scaleX={imageProps.scale}
+              scaleY={imageProps.scale}
+              rotation={imageProps.rotation}
+              onDragEnd={(e) => {
+                setImageProps({
+                  ...imageProps,
+                  x: e.target.x(),
+                  y: e.target.y(),
+                })
+              }}
+              onTransformEnd={(e) => {
+                const node = e.target
+                const scale = node.scaleX()
+                setImageProps({
+                  ...imageProps,
+                  scale,
+                  rotation: node.rotation(),
+                })
+              }}
+            />
+          )}
+        </Layer>
+      </Stage>
     </div>
   )
 }
