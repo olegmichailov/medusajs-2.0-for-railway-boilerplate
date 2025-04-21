@@ -1,83 +1,74 @@
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 import { fabric } from "fabric"
 
-export default function EditorCanvas() {
+export default function DarkroomEditor() {
   const canvasRef = useRef(null)
-  const fileInputRef = useRef(null)
-  const canvasWidth = 1000
-  const canvasHeight = 1200
+  const [canvas, setCanvas] = useState<fabric.Canvas | null>(null)
+  const [imageURL, setImageURL] = useState<string | null>(null)
 
   useEffect(() => {
-    const canvas = new fabric.Canvas("editor-canvas", {
-      width: canvasWidth,
-      height: canvasHeight,
-      backgroundColor: "#fff",
+    if (!canvasRef.current) return
+    const fabricCanvas = new fabric.Canvas(canvasRef.current, {
+      width: 900,
+      height: 1080,
+      backgroundColor: "white",
       preserveObjectStacking: true,
     })
 
-    // Load mockup and cut front part (left half)
     fabric.Image.fromURL("/mockups/MOCAP_FRONT_BACK.png", (img) => {
-      const halfWidth = img.width / 2
-      const front = new fabric.Image(img.getElement(), {
+      const frontHalf = new fabric.Image(img.getElement(), {
         left: 0,
         top: 0,
-        scaleX: canvasWidth / halfWidth,
-        scaleY: canvasHeight / img.height,
-        cropX: 0,
-        cropY: 0,
-        width: halfWidth,
-        height: img.height,
+        scaleX: 0.5,
+        scaleY: 0.5,
         selectable: false,
-        evented: false,
       })
-      canvas.setBackgroundImage(front, canvas.renderAll.bind(canvas))
+      fabricCanvas.setBackgroundImage(frontHalf, fabricCanvas.renderAll.bind(fabricCanvas))
     })
 
-    canvasRef.current = canvas
-    return () => canvas.dispose()
+    setCanvas(fabricCanvas)
+
+    return () => {
+      fabricCanvas.dispose()
+    }
   }, [])
 
-  const handleFileChange = (e) => {
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-
     const reader = new FileReader()
-    reader.onload = function (f) {
-      fabric.Image.fromURL(f.target.result, (img) => {
+    reader.onload = () => {
+      const dataURL = reader.result as string
+      setImageURL(dataURL)
+      if (!canvas) return
+
+      fabric.Image.fromURL(dataURL, (img) => {
         img.set({
-          left: canvasWidth / 2 - img.width / 4,
-          top: canvasHeight / 2 - img.height / 4,
+          left: 300,
+          top: 300,
           scaleX: 0.5,
           scaleY: 0.5,
-          hasRotatingPoint: true,
-          cornerStyle: "circle",
-          transparentCorners: false,
           cornerColor: "black",
+          cornerSize: 10,
         })
-        canvasRef.current.add(img)
-        canvasRef.current.setActiveObject(img)
-        canvasRef.current.renderAll()
+        canvas.add(img)
+        canvas.setActiveObject(img)
+        canvas.renderAll()
       })
     }
     reader.readAsDataURL(file)
   }
 
   return (
-    <div className="flex w-full h-screen">
-      <div className="w-[320px] p-4 border-r border-black">
-        <h2 className="font-semibold text-lg mb-4">DARKROOM EDITOR</h2>
-        <label className="text-sm font-semibold block mb-2">UPLOAD PRINT</label>
-        <input
-          type="file"
-          ref={fileInputRef}
-          onChange={handleFileChange}
-          accept="image/*"
-          className="mb-4"
-        />
-        <p className="text-xs">Drag, scale, rotate print freely</p>
+    <div className="flex w-full min-h-screen">
+      <div className="w-1/3 p-6">
+        <h1 className="text-3xl font-bold mb-4">DARKROOM EDITOR</h1>
+        <label className="block mb-2">UPLOAD PRINT</label>
+        <input type="file" accept="image/*" onChange={handleFileUpload} />
+        <p className="text-sm mt-2 text-gray-600">Drag, scale, rotate print freely</p>
       </div>
-      <div className="flex-1 flex items-center justify-center">
-        <canvas id="editor-canvas" className="border" />
+      <div className="flex-1 flex items-center justify-center p-6">
+        <canvas ref={canvasRef} />
       </div>
     </div>
   )
