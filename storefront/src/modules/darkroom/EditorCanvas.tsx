@@ -1,75 +1,88 @@
-"use client"
+// src/app/[countryCode]/darkroom/page.tsx
+"use client";
 
-import { useState } from "react"
-import { Stage, Layer, Image as KonvaImage, Transformer } from "react-konva"
-import useImage from "use-image"
+import { useEffect, useRef, useState } from "react";
+import { Stage, Layer, Image as KonvaImage, Transformer } from "react-konva";
+import useImage from "use-image";
 
-export default function EditorCanvas() {
-  const [printImage, setPrintImage] = useState(null)
-  const [mockup] = useImage("/mockups/MOCAP_FRONT.png")
-  const [print] = useImage(printImage)
+const DarkroomEditor = () => {
+  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const [image] = useImage(uploadedImage || "");
+  const [mockupImage] = useImage("/mockups/MOCAP_FRONT.png");
+  const imageRef = useRef<any>(null);
+  const transformerRef = useRef<any>(null);
 
-  const [selected, setSelected] = useState(false)
-
-  const handleUpload = (e) => {
-    const file = e.target.files[0]
-    if (file) {
-      const reader = new FileReader()
-      reader.onload = () => setPrintImage(reader.result)
-      reader.readAsDataURL(file)
+  useEffect(() => {
+    if (imageRef.current && transformerRef.current) {
+      transformerRef.current.nodes([imageRef.current]);
+      transformerRef.current.getLayer().batchDraw();
     }
-  }
+  }, [image]);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        setUploadedImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   return (
-    <div className="flex w-full h-screen">
-      {/* Left Panel */}
-      <div className="w-1/2 p-10 flex flex-col justify-start">
-        <h2 className="text-2xl tracking-widest font-bold mb-4">UPLOAD PRINT</h2>
-        <input type="file" accept="image/*" onChange={handleUpload} className="mb-2" />
-        <p className="text-sm text-gray-500">Drag, scale, rotate print freely</p>
+    <div className="w-screen h-screen flex bg-white">
+      {/* Left: Upload control */}
+      <div className="w-1/2 p-10">
+        <h1 className="text-2xl font-bold mb-6 uppercase tracking-wider">Darkroom Editor</h1>
+        <div className="mb-4">
+          <label className="block text-lg font-semibold mb-2">Upload Print</label>
+          <input type="file" accept="image/*" onChange={handleFileChange} />
+          <p className="text-sm text-gray-500 mt-2">Drag, scale, rotate print freely</p>
+        </div>
       </div>
 
-      {/* Right Canvas */}
+      {/* Right: Mockup canvas */}
       <div className="w-1/2 flex items-center justify-center">
-        <Stage width={500} height={700}>
-          <Layer>
-            {mockup && (
-              <KonvaImage image={mockup} width={500} height={700} />
-            )}
-
-            {print && (
-              <>
-                <KonvaImage
-                  image={print}
-                  x={100}
-                  y={200}
-                  width={200}
-                  height={200}
-                  draggable
-                  rotation={0}
-                  onClick={() => setSelected(true)}
-                  onTap={() => setSelected(true)}
-                  name="print"
-                />
-                {selected && (
-                  <Transformer
-                    rotateEnabled={true}
-                    enabledAnchors={["top-left", "top-right", "bottom-left", "bottom-right"]}
-                    boundBoxFunc={(oldBox, newBox) => newBox}
-                    nodes={
-                      print ? [
-                        ...document
-                          .querySelectorAll(".konvajs-content canvas")
-                          .values()
-                      ] : []
-                    }
+        {mockupImage && (
+          <Stage width={500} height={700}>
+            <Layer>
+              <KonvaImage
+                image={mockupImage}
+                width={500}
+                height={700}
+                x={0}
+                y={0}
+              />
+              {image && (
+                <>
+                  <KonvaImage
+                    image={image}
+                    ref={imageRef}
+                    x={100}
+                    y={150}
+                    width={200}
+                    height={200}
+                    draggable
                   />
-                )}
-              </>
-            )}
-          </Layer>
-        </Stage>
+                  <Transformer
+                    ref={transformerRef}
+                    rotateEnabled={true}
+                    boundBoxFunc={(oldBox, newBox) => {
+                      if (newBox.width < 50 || newBox.height < 50) {
+                        return oldBox;
+                      }
+                      return newBox;
+                    }}
+                  />
+                </>
+              )}
+            </Layer>
+          </Stage>
+        )}
       </div>
     </div>
-  )
-}
+  );
+};
+
+export default DarkroomEditor;
