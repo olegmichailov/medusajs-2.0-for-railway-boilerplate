@@ -52,7 +52,8 @@
     "webpack": "^5",
     "zustand": "^4.5.2",
     "konva": "^9.3.3",
-    "react-konva": "^18.2.10"
+    "react-konva": "^18.2.10",
+    "use-image": "^1.0.1"
   },
   "devDependencies": {
     "@babel/core": "^7.17.5",
