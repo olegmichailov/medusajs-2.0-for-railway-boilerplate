@@ -1,5 +1,4 @@
-// ✅ File 1 of 4
-// Path: storefront/src/modules/products/components/product-preview/index.tsx
+// storefront/src/modules/products/components/product-preview/index.tsx
 
 import { Text } from "@medusajs/ui"
 
