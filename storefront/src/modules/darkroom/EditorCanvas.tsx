@@ -1,91 +1,62 @@
-// ✅ NEW Darkroom Editor with mockup front image, image upload and transformable print
-"use client"
+// src/app/[countryCode]/darkroom/page.tsx
 
-import { useEffect, useRef, useState } from "react"
-import { fabric } from "fabric"
-import Image from "next/image"
+'use client'
 
-export default function DarkroomEditor() {
-  const canvasRef = useRef(null)
-  const [canvas, setCanvas] = useState<fabric.Canvas | null>(null)
+import { useState } from 'react'
+import Image from 'next/image'
+import { Rnd } from 'react-rnd'
 
-  // Init canvas
-  useEffect(() => {
-    const c = new fabric.Canvas("darkroom-canvas", {
-      preserveObjectStacking: true,
-    })
-    setCanvas(c)
-    return () => c.dispose()
-  }, [])
-
-  // Load mockup (left half only)
-  useEffect(() => {
-    if (!canvas) return
-    fabric.Image.fromURL("/mockups/MOCAP_FRONT_BACK.png", (img) => {
-      img.set({
-        left: 0,
-        top: 0,
-        selectable: false,
-        scaleX: 0.5,
-      })
-      canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas), {
-        scaleY: canvas.height ? canvas.height / img.height! : 1,
-      })
-    })
-  }, [canvas])
+export default function DarkroomPage() {
+  const [imageSrc, setImageSrc] = useState<string | null>(null)
+  const [position, setPosition] = useState({ x: 50, y: 50 })
+  const [size, setSize] = useState({ width: 200, height: 200 })
 
   const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (!file || !canvas) return
-    const reader = new FileReader()
-    reader.onload = function (f) {
-      const data = f.target?.result as string
-      fabric.Image.fromURL(data, (img) => {
-        img.set({
-          left: 100,
-          top: 100,
-          scaleX: 0.2,
-          scaleY: 0.2,
-        })
-        canvas.add(img)
-        canvas.setActiveObject(img)
-      })
+    if (file) {
+      const reader = new FileReader()
+      reader.onload = () => {
+        setImageSrc(reader.result as string)
+      }
+      reader.readAsDataURL(file)
     }
-    reader.readAsDataURL(file)
-  }
-
-  const handleExport = () => {
-    if (!canvas) return
-    const dataURL = canvas.toDataURL({ format: "png", multiplier: 4 })
-    const link = document.createElement("a")
-    link.href = dataURL
-    link.download = "print.png"
-    link.click()
   }
 
   return (
-    <div className="flex gap-6 px-6 pt-6">
+    <div className="flex h-screen w-screen">
       {/* Sidebar */}
-      <div className="w-64 flex flex-col gap-4">
-        <label className="text-xs">UPLOAD PRINT</label>
-        <input type="file" onChange={handleUpload} />
-        <button
-          onClick={handleExport}
-          className="border border-black px-3 py-1 uppercase text-xs"
-        >
-          Print
-        </button>
+      <div className="w-1/3 p-4 border-r border-gray-300">
+        <h1 className="text-xl font-semibold mb-4">Upload Print</h1>
+        <input type="file" accept="image/*" onChange={handleUpload} className="mb-4" />
+        <p className="text-sm text-gray-500">Drag to position the print on the mockup.</p>
       </div>
 
-      {/* Canvas area */}
-      <div className="flex-1">
-        <canvas
-          id="darkroom-canvas"
-          ref={canvasRef as any}
-          width={1500}
-          height={1087}
-          className="border"
-        />
+      {/* Canvas Area */}
+      <div className="relative w-2/3 bg-white flex items-center justify-center overflow-hidden">
+        <div className="relative w-[750px] h-[1087px]">
+          <Image
+            src="/mockups/MOCAP_FRONT_BACK.png"
+            alt="Mockup"
+            fill
+            style={{ objectFit: 'cover', objectPosition: 'left' }}
+            priority
+          />
+
+          {imageSrc && (
+            <Rnd
+              bounds="parent"
+              size={size}
+              position={position}
+              onDragStop={(_, d) => setPosition({ x: d.x, y: d.y })}
+              onResizeStop={(_, __, ref, ___, position) => {
+                setSize({ width: ref.offsetWidth, height: ref.offsetHeight })
+                setPosition(position)
+              }}
+            >
+              <img src={imageSrc} alt="User print" className="w-full h-full object-contain" />
+            </Rnd>
+          )}
+        </div>
       </div>
     </div>
   )
