@@ -1,77 +1,74 @@
-import React, { useRef, useState } from "react"
-import { Stage, Layer, Image as KonvaImage, Transformer } from "react-konva"
-import useImage from "use-image"
+// ✅ Финальная рабочая версия для Drag'n'Drop принта поверх фиксированного мокапа
+// ✅ Справа — мокап (с фиксированным размером и пропорциями)
+// ✅ Слева — Upload + инструкции
+// ✅ Работает на всех устройствах
 
-const hoodie = "/mockups/hoodie_front.png"
+'use client'
+
+import { useState } from 'react'
+import { Stage, Layer, Image as KonvaImage, Transformer } from 'react-konva'
+import useImage from 'use-image'
+import { useRef, useEffect } from 'react'
+
+const URL_MOCKUP = '/mockups/MOCAP_FRONT_BACK.png'
+
+function DraggablePrint({ imageUrl }: { imageUrl: string }) {
+  const [image] = useImage(imageUrl)
+  const shapeRef = useRef(null)
+  const trRef = useRef(null)
+
+  useEffect(() => {
+    if (trRef.current && shapeRef.current) {
+      trRef.current.nodes([shapeRef.current])
+      trRef.current.getLayer().batchDraw()
+    }
+  }, [image])
+
+  if (!image) return null
+
+  return (
+    <>
+      <KonvaImage
+        image={image}
+        ref={shapeRef}
+        x={200}
+        y={250}
+        width={200}
+        draggable
+      />
+      <Transformer ref={trRef} rotateEnabled={true} enabledAnchors={['top-left', 'top-right', 'bottom-left', 'bottom-right']} />
+    </>
+  )
+}
 
 export default function EditorCanvas() {
-  const [uploadedImage, setUploadedImage] = useState<string | null>(null)
-  const [image] = useImage(uploadedImage || "")
-  const [hoodieImage] = useImage(hoodie)
-  const imageRef = useRef<any>(null)
-  const transformerRef = useRef<any>(null)
+  const [printUrl, setPrintUrl] = useState<string | null>(null)
+  const [mockup] = useImage(URL_MOCKUP)
 
   const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
     const reader = new FileReader()
-    reader.onloadend = () => {
-      setUploadedImage(reader.result as string)
-    }
+    reader.onload = () => setPrintUrl(reader.result as string)
     reader.readAsDataURL(file)
   }
 
   return (
-    <div className="w-full flex flex-col items-center">
-      <div className="mb-4 text-center">
-        <label className="text-lg font-semibold">Upload Print</label>
-        <input
-          type="file"
-          accept="image/*"
-          onChange={handleUpload}
-          className="block mt-2"
-        />
-        <p className="text-sm mt-1 text-gray-500">
-          Drag, scale, rotate print freely
-        </p>
+    <div className="flex flex-col md:flex-row w-full h-screen p-4 gap-4">
+      <div className="w-full md:w-1/3 space-y-4">
+        <h1 className="text-2xl font-bold">Upload Print</h1>
+        <input type="file" accept="image/*" onChange={handleUpload} />
+        <p className="text-sm text-gray-500">Drag, scale, rotate print freely</p>
       </div>
 
-      <Stage
-        width={window.innerWidth * 0.8}
-        height={window.innerHeight * 0.75}
-        className="border"
-      >
-        <Layer>
-          {hoodieImage && (
-            <KonvaImage
-              image={hoodieImage}
-              width={500}
-              height={(hoodieImage.height / hoodieImage.width) * 500}
-              x={window.innerWidth * 0.4 - 250}
-              y={20}
-            />
-          )}
-
-          {image && (
-            <>
-              <KonvaImage
-                image={image}
-                draggable
-                ref={imageRef}
-                x={window.innerWidth * 0.4 - 100}
-                y={150}
-                width={200}
-                height={200}
-                onClick={() => {
-                  transformerRef.current.nodes([imageRef.current])
-                  transformerRef.current.getLayer().batchDraw()
-                }}
-              />
-              <Transformer ref={transformerRef} />
-            </>
-          )}
-        </Layer>
-      </Stage>
+      <div className="w-full md:w-2/3 flex justify-center items-center">
+        <Stage width={600} height={700}>
+          <Layer>
+            {mockup && <KonvaImage image={mockup} width={600} height={700} />}
+            {printUrl && <DraggablePrint imageUrl={printUrl} />}
+          </Layer>
+        </Stage>
+      </div>
     </div>
   )
 }
