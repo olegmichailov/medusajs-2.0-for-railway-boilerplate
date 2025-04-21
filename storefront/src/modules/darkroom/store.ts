@@ -1,19 +1,25 @@
 import { create } from "zustand"
 
-type DarkroomState = {
-  tool: "select" | "draw" | "text"
+type Tool = "select" | "draw" | "text"
+
+interface DarkroomState {
+  tool: Tool
+  setTool: (tool: Tool) => void
   color: string
-  brushSize: number
-  setTool: (tool: DarkroomState["tool"]) => void
   setColor: (color: string) => void
+  brushSize: number
   setBrushSize: (size: number) => void
+  textInput: string
+  setTextInput: (text: string) => void
 }
 
 export const useDarkroomStore = create<DarkroomState>((set) => ({
   tool: "select",
-  color: "#ffffff",
-  brushSize: 4,
   setTool: (tool) => set({ tool }),
+  color: "#ffffff",
   setColor: (color) => set({ color }),
-  setBrushSize: (brushSize) => set({ brushSize }),
+  brushSize: 4,
+  setBrushSize: (size) => set({ brushSize: size }),
+  textInput: "",
+  setTextInput: (text) => set({ textInput: text }),
 }))
