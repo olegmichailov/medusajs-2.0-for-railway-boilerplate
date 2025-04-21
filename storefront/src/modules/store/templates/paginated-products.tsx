@@ -1,3 +1,5 @@
+// storefront/src/modules/store/templates/paginated-products.tsx
+
 "use client"
 
 import { useEffect, useState } from "react"
@@ -8,9 +10,6 @@ import { Pagination } from "@modules/store/components/pagination"
 import { SortOptions } from "@modules/store/components/refinement-list/sort-products"
 
 const PRODUCT_LIMIT = 12
-
-const columnOptionsMobile = [1, 2]
-const columnOptionsDesktop = [1, 2, 3, 4]
 
 type PaginatedProductsParams = {
   limit: number
@@ -35,19 +34,9 @@ export default function PaginatedProducts({
   productsIds?: string[]
   countryCode: string
 }) {
-  const [columns, setColumns] = useState<number | null>(null)
   const [products, setProducts] = useState<any[]>([])
   const [region, setRegion] = useState<any>(null)
   const [count, setCount] = useState(0)
-
-  const columnOptions = typeof window !== "undefined" && window.innerWidth < 640
-    ? columnOptionsMobile
-    : columnOptionsDesktop
-
-  useEffect(() => {
-    const isMobile = window.innerWidth < 640
-    setColumns(isMobile ? 1 : 2)
-  }, [])
 
   useEffect(() => {
     const fetchData = async () => {
@@ -75,44 +64,12 @@ export default function PaginatedProducts({
     fetchData()
   }, [sortBy, page, collectionId, categoryId, productsIds, countryCode])
 
-  if (columns === null) return null
-
   const totalPages = Math.ceil(count / PRODUCT_LIMIT)
-
-  const gridColsClass =
-    columns === 1
-      ? "grid-cols-1"
-      : columns === 2
-      ? "grid-cols-2"
-      : columns === 3
-      ? "grid-cols-3"
-      : "grid-cols-4"
 
   return (
     <>
-      <div className="px-6 pt-4 pb-2 flex items-center justify-between sm:justify-between">
-        <div className="text-sm sm:text-base font-medium tracking-wide uppercase">
-          {/* Динамический заголовок будет здесь от другого компонента */}
-        </div>
-        <div className="flex gap-1 ml-auto">
-          {columnOptions.map((col) => (
-            <button
-              key={col}
-              onClick={() => setColumns(col)}
-              className={`w-6 h-6 flex items-center justify-center border text-xs font-medium transition-all duration-200 rounded-none ${
-                columns === col
-                  ? "bg-black text-white border-black"
-                  : "bg-white text-black border-gray-300 hover:border-black"
-              }`}
-            >
-              {col}
-            </button>
-          ))}
-        </div>
-      </div>
-
       <ul
-        className={`grid ${gridColsClass} gap-x-4 gap-y-10 px-6 sm:px-0`}
+        className="grid grid-cols-1 small:grid-cols-2 gap-x-4 gap-y-10"
         data-testid="products-list"
       >
         {products.map((p) => (
