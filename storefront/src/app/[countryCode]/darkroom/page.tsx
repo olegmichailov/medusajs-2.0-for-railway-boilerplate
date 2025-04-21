@@ -1,44 +1,38 @@
 "use client"
 
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
-import { Button } from "@/components/ui/button"
 
-const mockups = [
-  {
-    name: "Front",
-    filename: "/mockups/il_fullxfull.6008848563_7wnj.avif",
-    side: "left",
-  },
-  {
-    name: "Back",
-    filename: "/mockups/il_570xN.6002672805_egkj.avif",
-    side: "right",
-  },
-]
+const mockupSrc = "/mockups/il_fullxfull.6008848563_7wnj.avif" // один файл с front/back
 
 export default function Darkroom() {
   const pathname = usePathname()
   const countryCode = pathname.split("/")[1] || "de"
 
-  const [selectedMockup, setSelectedMockup] = useState(mockups[0])
+  const [side, setSide] = useState<"front" | "back">("front")
   const [uploadedImage, setUploadedImage] = useState<string | null>(null)
+  const [position, setPosition] = useState({ x: 200, y: 200 })
   const [scale, setScale] = useState(1)
   const [rotation, setRotation] = useState(0)
-  const [offsetX, setOffsetX] = useState(0)
-  const [offsetY, setOffsetY] = useState(0)
 
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const imageRef = useRef<HTMLImageElement>(null)
 
   const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file) {
-      const reader = new FileReader()
-      reader.onload = () => setUploadedImage(reader.result as string)
-      reader.readAsDataURL(file)
-    }
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => setUploadedImage(reader.result as string)
+    reader.readAsDataURL(file)
+  }
+
+  const handleDrag = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+    const rect = e.currentTarget.getBoundingClientRect()
+    setPosition({
+      x: e.clientX - rect.left - 50,
+      y: e.clientY - rect.top - 50,
+    })
   }
 
   const handlePrint = () => {
@@ -46,67 +40,76 @@ export default function Darkroom() {
     const ctx = canvas?.getContext("2d")
     if (!canvas || !ctx || !uploadedImage) return
 
-    const mockupImg = new Image()
-    mockupImg.src = selectedMockup.filename
-    mockupImg.onload = () => {
-      canvas.width = mockupImg.width / 2
-      canvas.height = mockupImg.height
+    const mockup = new Image()
+    mockup.src = mockupSrc
+    mockup.onload = () => {
+      const width = 2400 // hi-res for 300dpi at ~20cm width
+      const height = 3000
+      canvas.width = width
+      canvas.height = height
 
-      const sx = selectedMockup.side === "left" ? 0 : mockupImg.width / 2
+      const half = mockup.width / 2
       ctx.drawImage(
-        mockupImg,
-        sx,
+        mockup,
+        side === "front" ? 0 : half,
         0,
-        mockupImg.width / 2,
-        mockupImg.height,
+        half,
+        mockup.height,
         0,
         0,
-        mockupImg.width / 2,
-        mockupImg.height
+        width,
+        height
       )
 
-      const uploaded = imageRef.current
-      if (uploaded) {
-        const centerX = canvas.width / 2 + offsetX
-        const centerY = canvas.height / 2 + offsetY
-        const imgWidth = uploaded.width * scale
-        const imgHeight = uploaded.height * scale
-
+      const img = new Image()
+      img.src = uploadedImage
+      img.onload = () => {
         ctx.save()
-        ctx.translate(centerX, centerY)
+        ctx.translate(position.x * 4, position.y * 4) // scale to hi-res
         ctx.rotate((rotation * Math.PI) / 180)
-        ctx.drawImage(
-          uploaded,
-          -imgWidth / 2,
-          -imgHeight / 2,
-          imgWidth,
-          imgHeight
-        )
+        const w = img.width * scale * 4
+        const h = img.height * scale * 4
+        ctx.drawImage(img, -w / 2, -h / 2, w, h)
         ctx.restore()
 
-        const link = document.createElement("a")
-        link.download = `gmorkl_mockup_${selectedMockup.name}.png`
-        link.href = canvas.toDataURL()
-        link.click()
+        const a = document.createElement("a")
+        a.download = `gmorkl_darkroom_${side}.png`
+        a.href = canvas.toDataURL()
+        a.click()
       }
     }
   }
 
   return (
-    <div className="px-4 py-10 sm:px-10 max-w-7xl mx-auto font-sans">
-      <h1 className="text-4xl tracking-wider font-medium uppercase mb-6">
+    <div className="px-6 py-10 max-w-7xl mx-auto font-sans">
+      <h1 className="text-4xl tracking-wider uppercase font-medium mb-6">
         Darkroom Editor
       </h1>
 
-      <div className="flex flex-col sm:flex-row gap-10">
-        {/* Controls */}
-        <div className="flex flex-col gap-6 w-full sm:w-1/3">
+      <div className="flex flex-col lg:flex-row gap-8">
+        {/* Left panel */}
+        <div className="w-full lg:w-1/2 flex flex-col gap-4">
           <input
             type="file"
             accept="image/*"
             onChange={handleUpload}
-            className="text-sm tracking-wide uppercase border border-black p-2"
+            className="uppercase tracking-wider text-sm border border-black p-2"
           />
+
+          <div className="flex gap-2">
+            <button
+              onClick={() => setSide("front")}
+              className={`border px-4 py-1 text-sm uppercase tracking-wider transition hover:bg-black hover:text-white ${side === "front" ? "bg-black text-white" : ""}`}
+            >
+              Front
+            </button>
+            <button
+              onClick={() => setSide("back")}
+              className={`border px-4 py-1 text-sm uppercase tracking-wider transition hover:bg-black hover:text-white ${side === "back" ? "bg-black text-white" : ""}`}
+            >
+              Back
+            </button>
+          </div>
 
           <label className="text-sm uppercase tracking-wide">Zoom</label>
           <input
@@ -121,73 +124,49 @@ export default function Darkroom() {
           <label className="text-sm uppercase tracking-wide">Rotate</label>
           <input
             type="range"
-            min="0"
-            max="360"
+            min="-180"
+            max="180"
             step="1"
             value={rotation}
             onChange={(e) => setRotation(parseInt(e.target.value))}
           />
 
-          <label className="text-sm uppercase tracking-wide">Move X</label>
-          <input
-            type="range"
-            min={-200}
-            max={200}
-            step={5}
-            value={offsetX}
-            onChange={(e) => setOffsetX(parseInt(e.target.value))}
-          />
-
-          <label className="text-sm uppercase tracking-wide">Move Y</label>
-          <input
-            type="range"
-            min={-200}
-            max={200}
-            step={5}
-            value={offsetY}
-            onChange={(e) => setOffsetY(parseInt(e.target.value))}
-          />
-
-          <Button onClick={handlePrint}>Print to Mockup</Button>
-
-          <div className="flex gap-2 mt-4">
-            {mockups.map((m) => (
-              <button
-                key={m.name}
-                onClick={() => setSelectedMockup(m)}
-                className={`border text-xs px-2 py-1 tracking-wider uppercase hover:bg-black hover:text-white transition ${
-                  selectedMockup.name === m.name
-                    ? "bg-black text-white"
-                    : "bg-white text-black"
-                }`}
-              >
-                {m.name}
-              </button>
-            ))}
-          </div>
+          <button
+            onClick={handlePrint}
+            className="border mt-4 px-4 py-2 tracking-wider uppercase hover:bg-black hover:text-white"
+          >
+            Print
+          </button>
         </div>
 
-        {/* Mockup View */}
-        <div className="relative w-full sm:w-2/3 border border-black aspect-[3/4]">
+        {/* Right panel */}
+        <div className="w-full lg:w-1/2 relative border border-black aspect-[4/5] overflow-hidden">
           <Image
-            src={selectedMockup.filename}
-            alt="Mockup preview"
+            src={mockupSrc}
+            alt="Mockup"
             fill
-            className="object-contain"
+            className="object-cover"
+            style={{ objectPosition: side === "front" ? "left" : "right" }}
           />
-
           {uploadedImage && (
-            <img
-              src={uploadedImage}
-              alt="Preview"
-              ref={imageRef}
-              className="absolute top-1/2 left-1/2 w-32 opacity-80 pointer-events-none"
+            <div
+              className="absolute w-28 h-28 cursor-move"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={handleDrag}
               style={{
-                transform: `translate(-50%, -50%) scale(${scale}) rotate(${rotation}deg)`
+                top: position.y,
+                left: position.x,
+                transform: `scale(${scale}) rotate(${rotation}deg)`,
               }}
-            />
+            >
+              <img
+                ref={imageRef}
+                src={uploadedImage}
+                alt="Uploaded"
+                className="w-full h-full object-contain pointer-events-none"
+              />
+            </div>
           )}
-
           <canvas ref={canvasRef} className="hidden" />
         </div>
       </div>
