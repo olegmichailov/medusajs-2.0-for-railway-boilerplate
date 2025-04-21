@@ -1,85 +1,95 @@
+// storefront/src/app/[countryCode]/darkroom/page.tsx
+
 "use client"
 
+import { useState } from "react"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
-import { useState } from "react"
 
-export default function DarkroomPage() {
+const mockups = [
+  {
+    name: "Mockup A",
+    filename: "/mockups/il_fullxfull.6008848563_7wnj.avif",
+  },
+  {
+    name: "Mockup B",
+    filename: "/mockups/il_570xN.6002672805_egkj.avif",
+  },
+]
+
+export default function Darkroom() {
   const pathname = usePathname()
   const countryCode = pathname.split("/")[1] || "de"
 
-  const [image, setImage] = useState<File | null>(null)
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [selectedMockup, setSelectedMockup] = useState(mockups[0].filename)
+  const [uploadedImage, setUploadedImage] = useState<string | null>(null)
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
-      setImage(file)
-      setPreviewUrl(URL.createObjectURL(file))
+      const reader = new FileReader()
+      reader.onload = () => {
+        setUploadedImage(reader.result as string)
+      }
+      reader.readAsDataURL(file)
     }
   }
 
-  const handleSubmit = () => {
-    if (!image) return
-    alert("Order received — mockup preview and original image will be sent to your email.")
-    // Здесь можно будет добавить отправку в админку или на email
-  }
-
   return (
-    <div className="px-4 sm:px-8 py-8">
-      <h1 className="text-4xl font-medium tracking-wider uppercase mb-6">Darkroom</h1>
+    <div className="px-6 pt-10">
+      <h1 className="text-4xl tracking-wider uppercase mb-8 font-medium">
+        Darkroom Editor
+      </h1>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Редактор */}
-        <div className="flex flex-col gap-4">
-          <label className="text-base font-semibold tracking-wide uppercase">
-            Upload your image
-          </label>
+      <div className="flex flex-col sm:flex-row gap-10">
+        {/* Controls */}
+        <div className="flex flex-col gap-4 w-full sm:w-1/3">
+          <label className="text-sm uppercase tracking-wide">Upload Print</label>
           <input
             type="file"
             accept="image/*"
-            onChange={handleFileChange}
-            className="border border-gray-300 p-2"
+            onChange={handleUpload}
+            className="border border-black p-2 text-sm"
           />
-          {previewUrl && (
-            <Image
-              src={previewUrl}
-              alt="Preview"
-              width={400}
-              height={400}
-              className="border border-gray-300"
-            />
-          )}
+
+          <label className="text-sm mt-6 uppercase tracking-wide">Choose Mockup</label>
+          <div className="flex flex-col gap-2">
+            {mockups.map((mockup) => (
+              <button
+                key={mockup.filename}
+                onClick={() => setSelectedMockup(mockup.filename)}
+                className={`border text-sm px-3 py-2 text-left tracking-wider uppercase font-medium transition-colors hover:bg-black hover:text-white ${
+                  selectedMockup === mockup.filename
+                    ? "bg-black text-white"
+                    : "bg-white text-black"
+                }`}
+              >
+                {mockup.name}
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* Мокап */}
-        <div className="relative w-full h-[500px] border border-gray-300 overflow-hidden">
+        {/* Preview */}
+        <div className="relative w-full sm:w-2/3 aspect-[4/5] border border-gray-300">
           <Image
-            src="/ShortFront.jpg"
-            alt="T-Shirt Mockup"
-            layout="fill"
-            objectFit="cover"
+            src={selectedMockup}
+            alt="Mockup preview"
+            fill
+            className="object-contain"
           />
-          {previewUrl && (
+
+          {uploadedImage && (
             <Image
-              src={previewUrl}
-              alt="Print Preview"
-              width={150}
-              height={150}
-              className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-90 pointer-events-none"
+              src={uploadedImage}
+              alt="Uploaded Print"
+              width={200}
+              height={200}
+              className="absolute top-1/3 left-1/3 opacity-90"
+              draggable={false}
             />
           )}
         </div>
-      </div>
-
-      {/* Checkout */}
-      <div className="mt-6">
-        <button
-          onClick={handleSubmit}
-          className="px-6 py-2 border border-black text-base font-medium tracking-wide uppercase hover:bg-black hover:text-white transition-all"
-        >
-          Checkout
-        </button>
       </div>
     </div>
   )
