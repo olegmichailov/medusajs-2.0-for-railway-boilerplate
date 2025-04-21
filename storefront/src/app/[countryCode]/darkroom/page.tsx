@@ -1,8 +1,6 @@
-// storefront/src/app/[countryCode]/darkroom/page.tsx
-
 "use client"
 
-import EditorCanvas from "@/modules/darkroom/EditorCanvas"
+import EditorCanvas from "@modules/darkroom/EditorCanvas"
 
 export default function DarkroomPage() {
   return (
