@@ -1,93 +1,85 @@
 "use client"
 
-import { useState } from "react"
 import Image from "next/image"
-import Link from "next/link"
+import { usePathname } from "next/navigation"
+import { useState } from "react"
 
 export default function DarkroomPage() {
-  const [image, setImage] = useState<string | null>(null)
-  const [mockup, setMockup] = useState<string>("/il_fullxfull.6008848563_7wnj.jpeg") // default
+  const pathname = usePathname()
+  const countryCode = pathname.split("/")[1] || "de"
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const [image, setImage] = useState<File | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
-      const url = URL.createObjectURL(file)
-      setImage(url)
+      setImage(file)
+      setPreviewUrl(URL.createObjectURL(file))
     }
   }
 
+  const handleSubmit = () => {
+    if (!image) return
+    alert("Order received — mockup preview and original image will be sent to your email.")
+    // Здесь можно будет добавить отправку в админку или на email
+  }
+
   return (
-    <div className="min-h-screen p-6 sm:p-10 font-sans">
-      <h1 className="text-4xl font-[505] tracking-wider uppercase mb-6">Darkroom</h1>
+    <div className="px-4 sm:px-8 py-8">
+      <h1 className="text-4xl font-medium tracking-wider uppercase mb-6">Darkroom</h1>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-        {/* Editor panel */}
-        <div className="border border-black p-6 space-y-6">
-          <div>
-            <label className="block text-sm uppercase font-medium mb-2">Upload your artwork</label>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleImageUpload}
-              className="w-full text-sm border border-gray-300 rounded px-2 py-1"
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Редактор */}
+        <div className="flex flex-col gap-4">
+          <label className="text-base font-semibold tracking-wide uppercase">
+            Upload your image
+          </label>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleFileChange}
+            className="border border-gray-300 p-2"
+          />
+          {previewUrl && (
+            <Image
+              src={previewUrl}
+              alt="Preview"
+              width={400}
+              height={400}
+              className="border border-gray-300"
             />
-          </div>
-
-          <div>
-            <label className="block text-sm uppercase font-medium mb-2">Choose a mockup</label>
-            <select
-              value={mockup}
-              onChange={(e) => setMockup(e.target.value)}
-              className="w-full border border-gray-300 px-2 py-1 text-sm rounded"
-            >
-              <option value="/il_fullxfull.6008848563_7wnj.jpeg">Mockup A (Front)</option>
-              <option value="/il_570xN.6002672805_egkj.jpeg">Mockup B (Back)</option>
-            </select>
-          </div>
-
-          {image && (
-            <div>
-              <p className="text-sm uppercase mb-2">Your upload</p>
-              <Image
-                src={image}
-                alt="Uploaded design"
-                width={400}
-                height={400}
-                className="object-contain border border-gray-200"
-              />
-            </div>
           )}
         </div>
 
-        {/* Mockup preview panel */}
-        <div className="border border-black p-6 relative">
+        {/* Мокап */}
+        <div className="relative w-full h-[500px] border border-gray-300 overflow-hidden">
           <Image
-            src={mockup}
-            alt="T-shirt mockup"
-            width={600}
-            height={800}
-            className="w-full h-auto object-contain"
+            src="/ShortFront.jpg"
+            alt="T-Shirt Mockup"
+            layout="fill"
+            objectFit="cover"
           />
-
-          {image && (
+          {previewUrl && (
             <Image
-              src={image}
-              alt="Preview on mockup"
-              width={200}
-              height={200}
-              className="absolute top-[40%] left-[35%] opacity-80"
+              src={previewUrl}
+              alt="Print Preview"
+              width={150}
+              height={150}
+              className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-90 pointer-events-none"
             />
           )}
         </div>
       </div>
 
-      <div className="mt-10 flex justify-end">
-        <Link
-          href="/checkout?product=custom-print&price=80"
-          className="px-6 py-2 border border-black uppercase tracking-wide hover:bg-black hover:text-white transition-all"
+      {/* Checkout */}
+      <div className="mt-6">
+        <button
+          onClick={handleSubmit}
+          className="px-6 py-2 border border-black text-base font-medium tracking-wide uppercase hover:bg-black hover:text-white transition-all"
         >
-          Proceed to Checkout (€80)
-        </Link>
+          Checkout
+        </button>
       </div>
     </div>
   )
