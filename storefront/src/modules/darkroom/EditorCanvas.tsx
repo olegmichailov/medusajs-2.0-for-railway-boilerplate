@@ -3,12 +3,13 @@
 'use client'
 
 import { useState } from 'react'
+import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import { Rnd } from 'react-rnd'
 
-export default function DarkroomPage() {
-  const [imageSrc, setImageSrc] = useState<string | null>(null)
-  const [position, setPosition] = useState({ x: 50, y: 50 })
+const DarkroomEditor = () => {
+  const [image, setImage] = useState<string | null>(null)
+  const [position, setPosition] = useState({ x: 100, y: 100 })
   const [size, setSize] = useState({ width: 200, height: 200 })
 
   const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -16,44 +17,54 @@ export default function DarkroomPage() {
     if (file) {
       const reader = new FileReader()
       reader.onload = () => {
-        setImageSrc(reader.result as string)
+        setImage(reader.result as string)
       }
       reader.readAsDataURL(file)
     }
   }
 
   return (
-    <div className="flex h-screen w-screen">
+    <div className="flex w-full h-screen">
       {/* Sidebar */}
-      <div className="w-1/3 p-4 border-r border-gray-300">
-        <h1 className="text-xl font-semibold mb-4">Upload Print</h1>
-        <input type="file" accept="image/*" onChange={handleUpload} className="mb-4" />
-        <p className="text-sm text-gray-500">Drag to position the print on the mockup.</p>
+      <div className="w-1/4 p-6 border-r border-black">
+        <h1 className="text-3xl tracking-wider font-[505] mb-6">DARKROOM EDITOR</h1>
+        <div>
+          <p className="font-semibold mb-2">UPLOAD PRINT</p>
+          <input type="file" onChange={handleUpload} className="mb-4" />
+          <p className="text-sm text-gray-600">Drag, scale, rotate print freely</p>
+        </div>
       </div>
 
-      {/* Canvas Area */}
-      <div className="relative w-2/3 bg-white flex items-center justify-center overflow-hidden">
-        <div className="relative w-[750px] h-[1087px]">
+      {/* Editor Area */}
+      <div className="relative w-3/4 flex items-center justify-center bg-white overflow-hidden">
+        <div className="relative w-[600px] h-[800px]">
           <Image
             src="/mockups/MOCAP_FRONT_BACK.png"
-            alt="Mockup"
-            fill
-            style={{ objectFit: 'cover', objectPosition: 'left' }}
+            alt="Mockup Hoodie"
+            layout="fill"
+            objectFit="contain"
             priority
           />
 
-          {imageSrc && (
+          {image && (
             <Rnd
               bounds="parent"
-              size={size}
-              position={position}
+              size={{ width: size.width, height: size.height }}
+              position={{ x: position.x, y: position.y }}
               onDragStop={(_, d) => setPosition({ x: d.x, y: d.y })}
-              onResizeStop={(_, __, ref, ___, position) => {
-                setSize({ width: ref.offsetWidth, height: ref.offsetHeight })
-                setPosition(position)
+              onResizeStop={(_, __, ref, ___, pos) => {
+                setSize({
+                  width: parseInt(ref.style.width),
+                  height: parseInt(ref.style.height),
+                })
+                setPosition(pos)
               }}
             >
-              <img src={imageSrc} alt="User print" className="w-full h-full object-contain" />
+              <img
+                src={image}
+                alt="Uploaded design"
+                className="w-full h-full object-contain pointer-events-auto border border-black"
+              />
             </Rnd>
           )}
         </div>
@@ -61,3 +72,5 @@ export default function DarkroomPage() {
     </div>
   )
 }
+
+export default dynamic(() => Promise.resolve(DarkroomEditor), { ssr: false })
