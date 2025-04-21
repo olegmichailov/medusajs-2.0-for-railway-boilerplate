@@ -1,17 +1,19 @@
+import repeat from "@lib/util/repeat"
+import SkeletonProductPreview from "@modules/skeletons/components/skeleton-product-preview"
 
-
-import { Container } from "@medusajs/ui"
-
-const SkeletonProductPreview = () => {
+const SkeletonProductGrid = () => {
   return (
-    <div className="animate-pulse">
-      <Container className="aspect-[1/1] w-full bg-gray-100" />
-      <div className="flex justify-between text-base-regular mt-2">
-        <div className="w-2/5 h-6 bg-gray-100"></div>
-        <div className="w-1/5 h-6 bg-gray-100"></div>
-      </div>
-    </div>
+    <ul
+      className="grid grid-cols-2 small:grid-cols-3 medium:grid-cols-4 gap-x-4 gap-y-10 px-6 sm:px-0"
+      data-testid="products-list-loader"
+    >
+      {repeat(8).map((index) => (
+        <li key={index}>
+          <SkeletonProductPreview />
+        </li>
+      ))}
+    </ul>
   )
 }
 
-export default SkeletonProductPreview
+export default SkeletonProductGrid
