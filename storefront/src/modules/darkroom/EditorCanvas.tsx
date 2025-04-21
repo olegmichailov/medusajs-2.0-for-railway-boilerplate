@@ -1,74 +1,92 @@
-// ✅ Финальная рабочая версия для Drag'n'Drop принта поверх фиксированного мокапа
-// ✅ Справа — мокап (с фиксированным размером и пропорциями)
-// ✅ Слева — Upload + инструкции
-// ✅ Работает на всех устройствах
+import React, { useState, useRef } from "react";
+import { Stage, Layer, Image as KonvaImage, Transformer } from "react-konva";
+import useImage from "use-image";
 
-'use client'
+const CANVAS_WIDTH = 1200;
+const CANVAS_HEIGHT = 800;
 
-import { useState } from 'react'
-import { Stage, Layer, Image as KonvaImage, Transformer } from 'react-konva'
-import useImage from 'use-image'
-import { useRef, useEffect } from 'react'
+const mockupFrontUrl = "/mockups/MOCAP_FRONT.png";
+const mockupBackUrl = "/mockups/MOCAP_BACK.png";
 
-const URL_MOCKUP = '/mockups/MOCAP_FRONT_BACK.png'
+const EditorCanvas = () => {
+  const [mockupUrl] = useState(mockupFrontUrl); // TODO: Add UI to switch
+  const [uploadedImage, setUploadedImage] = useState(null);
+  const [imageProps, setImageProps] = useState({
+    x: 400,
+    y: 100,
+    width: 200,
+    height: 200,
+    rotation: 0,
+  });
 
-function DraggablePrint({ imageUrl }: { imageUrl: string }) {
-  const [image] = useImage(imageUrl)
-  const shapeRef = useRef(null)
-  const trRef = useRef(null)
+  const [mockup] = useImage(mockupUrl);
+  const [printImage] = useImage(uploadedImage);
 
-  useEffect(() => {
-    if (trRef.current && shapeRef.current) {
-      trRef.current.nodes([shapeRef.current])
-      trRef.current.getLayer().batchDraw()
+  const imageRef = useRef(null);
+  const transformerRef = useRef(null);
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setUploadedImage(reader.result);
+      };
+      reader.readAsDataURL(file);
     }
-  }, [image])
+  };
 
-  if (!image) return null
-
-  return (
-    <>
-      <KonvaImage
-        image={image}
-        ref={shapeRef}
-        x={200}
-        y={250}
-        width={200}
-        draggable
-      />
-      <Transformer ref={trRef} rotateEnabled={true} enabledAnchors={['top-left', 'top-right', 'bottom-left', 'bottom-right']} />
-    </>
-  )
-}
-
-export default function EditorCanvas() {
-  const [printUrl, setPrintUrl] = useState<string | null>(null)
-  const [mockup] = useImage(URL_MOCKUP)
-
-  const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    const reader = new FileReader()
-    reader.onload = () => setPrintUrl(reader.result as string)
-    reader.readAsDataURL(file)
-  }
+  const handleTransformEnd = () => {
+    if (imageRef.current) {
+      const node = imageRef.current;
+      setImageProps({
+        x: node.x(),
+        y: node.y(),
+        width: node.width() * node.scaleX(),
+        height: node.height() * node.scaleY(),
+        rotation: node.rotation(),
+      });
+    }
+  };
 
   return (
-    <div className="flex flex-col md:flex-row w-full h-screen p-4 gap-4">
-      <div className="w-full md:w-1/3 space-y-4">
-        <h1 className="text-2xl font-bold">Upload Print</h1>
-        <input type="file" accept="image/*" onChange={handleUpload} />
-        <p className="text-sm text-gray-500">Drag, scale, rotate print freely</p>
+    <div className="flex flex-row w-full h-[calc(100vh-100px)]">
+      <div className="w-1/2 p-10">
+        <h2 className="text-2xl font-bold mb-4">Upload Print</h2>
+        <input type="file" onChange={handleFileChange} />
+        <p className="text-sm text-gray-600 mt-2">Drag, scale, rotate print freely</p>
       </div>
 
-      <div className="w-full md:w-2/3 flex justify-center items-center">
-        <Stage width={600} height={700}>
+      <div className="w-1/2 flex items-center justify-center bg-white">
+        <Stage width={CANVAS_WIDTH / 2} height={CANVAS_HEIGHT}>
           <Layer>
-            {mockup && <KonvaImage image={mockup} width={600} height={700} />}
-            {printUrl && <DraggablePrint imageUrl={printUrl} />}
+            {mockup && <KonvaImage image={mockup} width={CANVAS_WIDTH / 2} height={(CANVAS_WIDTH / 2) * (mockup.height / mockup.width)} />}
+            {printImage && (
+              <>
+                <KonvaImage
+                  image={printImage}
+                  {...imageProps}
+                  draggable
+                  onTransformEnd={handleTransformEnd}
+                  onDragEnd={handleTransformEnd}
+                  ref={imageRef}
+                />
+                <Transformer
+                  ref={transformerRef}
+                  boundBoxFunc={(oldBox, newBox) => {
+                    if (newBox.width < 20 || newBox.height < 20) return oldBox;
+                    return newBox;
+                  }}
+                  anchorSize={8}
+                  anchorStrokeWidth={1}
+                />
+              </>
+            )}
           </Layer>
         </Stage>
       </div>
     </div>
-  )
-}
+  );
+};
+
+export default EditorCanvas;
