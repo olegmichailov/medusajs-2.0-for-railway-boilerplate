@@ -23,6 +23,7 @@ const SideMenu = ({ regions }: { regions: HttpTypes.StoreRegion[] | null }) => {
     { name: "About", href: "/about" },
     { name: "Search", href: "/search" },
     { name: "Account", href: "/account" },
+    { name: "Darkroom", href: "/darkroom" }, // 👈 Добавлено
     { name: "Cart", href: "/cart" },
   ]
 
