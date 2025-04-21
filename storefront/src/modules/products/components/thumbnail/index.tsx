@@ -26,13 +26,16 @@ const Thumbnail: React.FC<ThumbnailProps> = ({
   return (
     <Container
       className={clx(
-        "relative w-full overflow-hidden bg-ui-bg-subtle shadow-elevation-card-rest group-hover:shadow-elevation-card-hover transition-shadow ease-in-out duration-150",
+        "relative w-full overflow-hidden p-0 bg-white", // убраны тени и скругление
         className,
         {
           "aspect-[11/14]": isFeatured,
-          "aspect-[9/13.5]": !isFeatured && size !== "square",
+          "aspect-[1/1]": size !== "square", // квадрат
           "aspect-[1/1]": size === "square",
-          "w-full": true,
+          "w-[180px]": size === "small",
+          "w-[290px]": size === "medium",
+          "w-[440px]": size === "large",
+          "w-full": size === "full",
         }
       )}
       data-testid={dataTestid}
@@ -53,7 +56,7 @@ const ImageOrPlaceholder = ({
       className="absolute inset-0 object-cover object-center"
       draggable={false}
       quality={70}
-      sizes="(max-width: 576px) 100vw, (max-width: 768px) 50vw, 25vw"
+      sizes="(max-width: 576px) 280px, (max-width: 768px) 360px, (max-width: 992px) 480px, 800px"
       fill
     />
   ) : (
