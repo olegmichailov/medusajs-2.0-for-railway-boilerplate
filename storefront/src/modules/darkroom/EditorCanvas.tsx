@@ -4,10 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { Stage, Layer, Image as KonvaImage, Transformer } from "react-konva";
 import useImage from "use-image";
 
-const CANVAS_WIDTH = 985;
+const CANVAS_WIDTH = 1985;
 const CANVAS_HEIGHT = 1271;
-
-const SCALE_FACTOR = 0.5;
 
 const DarkroomEditor = () => {
   const [images, setImages] = useState<any[]>([]);
@@ -18,6 +16,7 @@ const DarkroomEditor = () => {
   );
 
   const transformerRef = useRef<any>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -29,8 +28,8 @@ const DarkroomEditor = () => {
         img.onload = () => {
           const newImage = {
             image: img,
-            x: (CANVAS_WIDTH - img.width / 4) / 2,
-            y: (CANVAS_HEIGHT - img.height / 4) / 2,
+            x: CANVAS_WIDTH / 2 - img.width / 8,
+            y: CANVAS_HEIGHT / 2 - img.height / 8,
             width: img.width / 4,
             height: img.height / 4,
             opacity: 1,
@@ -46,10 +45,11 @@ const DarkroomEditor = () => {
 
   useEffect(() => {
     if (transformerRef.current && selectedImageIndex !== null) {
-      transformerRef.current.nodes([
-        transformerRef.current.getStage().findOne(`#img-${selectedImageIndex}`)
-      ]);
-      transformerRef.current.getLayer().batchDraw();
+      const node = transformerRef.current.getStage().findOne(`#img-${selectedImageIndex}`);
+      if (node) {
+        transformerRef.current.nodes([node]);
+        transformerRef.current.getLayer().batchDraw();
+      }
     }
   }, [selectedImageIndex]);
 
@@ -57,76 +57,70 @@ const DarkroomEditor = () => {
     setSelectedImageIndex(null);
   };
 
-  const updateOpacity = (value: number) => {
-    if (selectedImageIndex !== null) {
-      const newImages = [...images];
-      newImages[selectedImageIndex].opacity = value;
-      setImages(newImages);
+  const handleKeyDown = (e: KeyboardEvent) => {
+    if (e.key === "Enter" && selectedImageIndex !== null) {
+      setSelectedImageIndex(null);
     }
   };
 
+  useEffect(() => {
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedImageIndex]);
+
   return (
-    <div className="w-screen h-screen flex bg-white">
+    <div className="w-screen h-screen flex bg-white overflow-hidden">
       <div className="w-1/2 p-10">
-        <h1 className="text-4xl font-[505] tracking-wider uppercase mb-6">Darkroom Editor</h1>
+        <h1 className="text-2xl font-bold mb-6 uppercase tracking-wider">Darkroom Editor</h1>
         <div className="mb-4">
           <label className="block text-lg font-semibold mb-2 uppercase">Upload Print</label>
           <input type="file" accept="image/*" onChange={handleFileChange} />
           <p className="text-sm text-gray-500 mt-2">Drag, scale, rotate print freely</p>
         </div>
         <div className="mb-4">
-          <label className="block text-sm font-medium uppercase mb-1">Opacity</label>
+          <label className="block text-sm font-medium uppercase">Opacity</label>
           <input
             type="range"
             min="0"
             max="1"
             step="0.01"
             value={selectedImageIndex !== null ? images[selectedImageIndex].opacity : 1}
-            onChange={(e) => updateOpacity(Number(e.target.value))}
-            className="w-full"
+            onChange={(e) => {
+              if (selectedImageIndex !== null) {
+                const newImages = [...images];
+                newImages[selectedImageIndex].opacity = Number(e.target.value);
+                setImages(newImages);
+              }
+            }}
           />
         </div>
-        <div className="flex gap-3">
-          <button
-            className="border px-4 py-2 uppercase text-sm"
-            onClick={() => setMockupType("front")}
-          >
-            Front
-          </button>
-          <button
-            className="border px-4 py-2 uppercase text-sm"
-            onClick={() => setMockupType("back")}
-          >
-            Back
-          </button>
-          <button
-            className="bg-black text-white px-4 py-2 uppercase text-sm"
-            onClick={() => console.log("Print", images)}
-          >
-            Print
-          </button>
+        <div className="flex gap-2">
+          <button className="border px-4 py-2 uppercase" onClick={() => setMockupType("front")}>Front</button>
+          <button className="border px-4 py-2 uppercase" onClick={() => setMockupType("back")}>Back</button>
+          <button className="bg-black text-white px-4 py-2 uppercase" onClick={() => console.log("Print", images)}>Print</button>
         </div>
       </div>
-
       <div className="w-1/2 flex items-center justify-center">
-        <div className="border border-dashed border-gray-400" style={{ transform: `scale(${SCALE_FACTOR})`, transformOrigin: 'top left' }}>
+        <div
+          ref={containerRef}
+          className="border border-gray-300"
+          style={{ width: "500px", height: "640px" }}
+        >
           {mockupImage && (
             <Stage
               width={CANVAS_WIDTH}
               height={CANVAS_HEIGHT}
+              scale={{ x: 500 / CANVAS_WIDTH, y: 640 / CANVAS_HEIGHT }}
               onMouseDown={(e) => {
                 const clicked = e.target;
                 if (clicked === e.target.getStage()) {
                   handleDeselect();
                 }
               }}
+              onDblClick={() => handleDeselect()}
             >
               <Layer>
-                <KonvaImage
-                  image={mockupImage}
-                  width={CANVAS_WIDTH}
-                  height={CANVAS_HEIGHT}
-                />
+                <KonvaImage image={mockupImage} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} />
                 {images.map((img, index) => (
                   <KonvaImage
                     key={img.id}
