@@ -1,14 +1,12 @@
 "use client"
 
-import EditorCanvas from "../../../modules/darkroom/EditorCanvas"
-
 export default function DarkroomPage() {
   return (
-    <div className="px-6 pt-10">
+    <div className="p-10 text-white">
       <h1 className="text-4xl tracking-wider uppercase mb-8 font-medium">
-        Darkroom Editor
+        Test Darkroom Editor
       </h1>
-      <EditorCanvas />
+      <p>Hello from Darkroom Page</p>
     </div>
   )
 }
