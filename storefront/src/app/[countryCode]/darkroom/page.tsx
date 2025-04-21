@@ -2,146 +2,181 @@
 
 "use client"
 
-import { useEffect, useRef, useState } from "react"
-import { fabric } from "fabric"
+import React, { useRef, useState } from "react"
+import { Stage, Layer, Image as KonvaImage, Text as KonvaText, Line } from "react-konva"
+import useImage from "use-image"
 import { usePathname } from "next/navigation"
-import Image from "next/image"
+import { Button } from "@/components/ui/button"
+import mockupFrontBack from "@/public/mockups/il_fullxfull.6008848563_7wnj.avif"
+import mockupAlt from "@/public/mockups/il_570xN.6002672805_egkj.avif"
 
-const mockup = {
-  name: "Mockup A",
-  src: "/mockups/il_fullxfull.6008848563_7wnj.avif"
-}
+const CANVAS_WIDTH = 600
+const CANVAS_HEIGHT = 750
 
-export default function Darkroom() {
+const Darkroom = () => {
   const pathname = usePathname()
   const countryCode = pathname.split("/")[1] || "de"
-  const canvasRef = useRef<fabric.Canvas | null>(null)
-  const canvasEl = useRef<HTMLCanvasElement>(null)
-  const [side, setSide] = useState<"front" | "back">("front")
-  const [imgLoaded, setImgLoaded] = useState(false)
-  const [mockupImg, setMockupImg] = useState<HTMLImageElement | null>(null)
 
-  useEffect(() => {
-    if (canvasEl.current && !canvasRef.current) {
-      const canvas = new fabric.Canvas(canvasEl.current, {
-        width: 600,
-        height: 800,
-        selection: true,
-      })
-      canvasRef.current = canvas
-    }
-  }, [])
+  const [selectedSide, setSelectedSide] = useState<"front" | "back">("front")
+  const [selectedMockup, setSelectedMockup] = useState<"a" | "b">("a")
 
-  useEffect(() => {
-    const img = new Image()
-    img.onload = () => {
-      setImgLoaded(true)
-      setMockupImg(img)
-    }
-    img.src = mockup.src
-  }, [])
+  const [uploadedImage, setUploadedImage] = useState<string | null>(null)
+  const [imagePos, setImagePos] = useState({ x: 200, y: 300 })
+  const [scale, setScale] = useState(1)
+  const [rotation, setRotation] = useState(0)
+  const [text, setText] = useState("Your Text Here")
+  const [textPos, setTextPos] = useState({ x: 100, y: 100 })
+  const [lines, setLines] = useState<Array<number[]>>([])
+  const [isDrawing, setIsDrawing] = useState(false)
 
-  useEffect(() => {
-    if (!imgLoaded || !mockupImg || !canvasRef.current) return
-    const canvas = canvasRef.current
-    canvas.clear()
+  const stageRef = useRef<any>(null)
 
-    const width = mockupImg.width / 2
-    const height = mockupImg.height
-    const sideOffset = side === "front" ? 0 : width
+  const [img] = useImage(selectedMockup === "a" ? mockupFrontBack.src : mockupAlt.src)
+  const [userImage] = useImage(uploadedImage || "")
 
-    const mockupFabricImg = new fabric.Image(mockupImg, {
-      left: 0,
-      top: 0,
-      scaleX: 600 / width,
-      scaleY: 800 / height,
-      cropX: sideOffset,
-      cropY: 0,
-      width,
-      height,
-      selectable: false,
-      evented: false,
-    })
-
-    canvas.setBackgroundImage(mockupFabricImg, canvas.renderAll.bind(canvas))
-  }, [imgLoaded, side])
-
-  const handleAddImage = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
     const reader = new FileReader()
-    reader.onload = () => {
-      fabric.Image.fromURL(reader.result as string, (img) => {
-        img.set({ left: 200, top: 200, scaleX: 0.4, scaleY: 0.4 })
-        canvasRef.current?.add(img)
-      })
-    }
+    reader.onload = () => setUploadedImage(reader.result as string)
     reader.readAsDataURL(file)
   }
 
-  const handleAddText = () => {
-    const text = new fabric.Textbox("Your text", {
-      left: 150,
-      top: 150,
-      fontSize: 24,
-      fill: "black",
-      fontFamily: "Barlow Condensed",
-    })
-    canvasRef.current?.add(text)
-  }
-
-  const handleDownload = () => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    const dataUrl = canvas.toDataURL({ format: "png" })
+  const handlePrint = () => {
+    const uri = stageRef.current.toDataURL()
     const link = document.createElement("a")
-    link.href = dataUrl
-    link.download = `gmorkl-${side}.png`
+    link.download = `gmorkl_mockup_${selectedMockup}_${selectedSide}.png`
+    link.href = uri
     link.click()
   }
 
+  const handleDrawStart = (e: any) => {
+    setIsDrawing(true)
+    const pos = e.target.getStage().getPointerPosition()
+    if (pos) setLines([...lines, [pos.x, pos.y]])
+  }
+
+  const handleDraw = (e: any) => {
+    if (!isDrawing) return
+    const stage = e.target.getStage()
+    const point = stage.getPointerPosition()
+    if (!point) return
+    let lastLine = lines[lines.length - 1]
+    if (!lastLine) return
+    lastLine = lastLine.concat([point.x, point.y])
+    const newLines = lines.slice(0, -1).concat([lastLine])
+    setLines(newLines)
+  }
+
+  const handleDrawEnd = () => {
+    setIsDrawing(false)
+  }
+
+  const crop = {
+    x: selectedSide === "front" ? 0 : img?.width / 2 || 0,
+    y: 0,
+    width: img?.width / 2 || 300,
+    height: img?.height || 750,
+  }
+
   return (
-    <div className="px-6 py-10 max-w-screen-lg mx-auto font-sans">
-      <h1 className="text-4xl uppercase tracking-wider mb-6">Darkroom Editor</h1>
-      <div className="flex flex-col md:flex-row gap-6">
-        <div className="flex flex-col w-full md:w-1/3 gap-4">
-          <input type="file" onChange={handleAddImage} />
-          <button
-            onClick={handleAddText}
-            className="border px-4 py-2 uppercase text-sm tracking-wider hover:bg-black hover:text-white"
-          >
-            Add Text
-          </button>
-          <div className="flex gap-2">
-            <button
-              className={`border px-4 py-1 uppercase text-sm ${
-                side === "front" ? "bg-black text-white" : ""
-              }`}
-              onClick={() => setSide("front")}
-            >
-              Front
-            </button>
-            <button
-              className={`border px-4 py-1 uppercase text-sm ${
-                side === "back" ? "bg-black text-white" : ""
-              }`}
-              onClick={() => setSide("back")}
-            >
-              Back
-            </button>
+    <div className="max-w-6xl mx-auto px-4 py-10 font-sans">
+      <h1 className="text-4xl tracking-wider font-medium uppercase mb-8">Darkroom Editor</h1>
+
+      <div className="flex flex-col sm:flex-row gap-8">
+        {/* Controls */}
+        <div className="flex flex-col gap-4 sm:w-1/3">
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleUpload}
+            className="text-sm border p-2"
+          />
+
+          <input
+            type="text"
+            placeholder="Enter your text"
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            className="text-sm border p-2"
+          />
+
+          <div className="flex gap-4">
+            <button onClick={() => setSelectedSide("front")}>Front</button>
+            <button onClick={() => setSelectedSide("back")}>Back</button>
           </div>
-          <button
-            onClick={handleDownload}
-            className="border px-4 py-2 mt-4 uppercase text-sm tracking-wider hover:bg-black hover:text-white"
-          >
-            Print
-          </button>
+
+          <div className="flex gap-2">
+            <button onClick={() => setSelectedMockup("a")}>Mockup A</button>
+            <button onClick={() => setSelectedMockup("b")}>Mockup B</button>
+          </div>
+
+          <Button onClick={handlePrint}>Print</Button>
         </div>
 
-        <div className="w-full md:w-2/3 border">
-          <canvas ref={canvasEl} className="w-full h-full" />
+        {/* Canvas Preview */}
+        <div className="border border-black">
+          <Stage
+            width={CANVAS_WIDTH}
+            height={CANVAS_HEIGHT}
+            ref={stageRef}
+            onMouseDown={handleDrawStart}
+            onMousemove={handleDraw}
+            onMouseup={handleDrawEnd}
+          >
+            <Layer>
+              {img && (
+                <KonvaImage
+                  image={img}
+                  x={0}
+                  y={0}
+                  crop={crop}
+                  width={CANVAS_WIDTH}
+                  height={CANVAS_HEIGHT}
+                />
+              )}
+              {userImage && (
+                <KonvaImage
+                  image={userImage}
+                  x={imagePos.x}
+                  y={imagePos.y}
+                  draggable
+                  rotation={rotation}
+                  scaleX={scale}
+                  scaleY={scale}
+                  onDragEnd={(e) =>
+                    setImagePos({ x: e.target.x(), y: e.target.y() })
+                  }
+                />
+              )}
+              <KonvaText
+                text={text}
+                x={textPos.x}
+                y={textPos.y}
+                fontSize={24}
+                fill="white"
+                draggable
+                onDragEnd={(e) =>
+                  setTextPos({ x: e.target.x(), y: e.target.y() })
+                }
+              />
+              {lines.map((line, idx) => (
+                <Line
+                  key={idx}
+                  points={line}
+                  stroke="red"
+                  strokeWidth={2}
+                  tension={0.5}
+                  lineCap="round"
+                  lineJoin="round"
+                />
+              ))}
+            </Layer>
+          </Stage>
         </div>
       </div>
     </div>
   )
 }
+
+export default Darkroom
