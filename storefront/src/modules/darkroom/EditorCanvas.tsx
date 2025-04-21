@@ -1,76 +1,84 @@
-// src/app/[countryCode]/darkroom/page.tsx
+import { useEffect, useRef } from "react"
+import { fabric } from "fabric"
 
-'use client'
+export default function EditorCanvas() {
+  const canvasRef = useRef(null)
+  const fileInputRef = useRef(null)
+  const canvasWidth = 1000
+  const canvasHeight = 1200
 
-import { useState } from 'react'
-import dynamic from 'next/dynamic'
-import Image from 'next/image'
-import { Rnd } from 'react-rnd'
+  useEffect(() => {
+    const canvas = new fabric.Canvas("editor-canvas", {
+      width: canvasWidth,
+      height: canvasHeight,
+      backgroundColor: "#fff",
+      preserveObjectStacking: true,
+    })
 
-const DarkroomEditor = () => {
-  const [image, setImage] = useState<string | null>(null)
-  const [position, setPosition] = useState({ x: 100, y: 100 })
-  const [size, setSize] = useState({ width: 200, height: 200 })
+    // Load mockup and cut front part (left half)
+    fabric.Image.fromURL("/mockups/MOCAP_FRONT_BACK.png", (img) => {
+      const halfWidth = img.width / 2
+      const front = new fabric.Image(img.getElement(), {
+        left: 0,
+        top: 0,
+        scaleX: canvasWidth / halfWidth,
+        scaleY: canvasHeight / img.height,
+        cropX: 0,
+        cropY: 0,
+        width: halfWidth,
+        height: img.height,
+        selectable: false,
+        evented: false,
+      })
+      canvas.setBackgroundImage(front, canvas.renderAll.bind(canvas))
+    })
 
-  const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    canvasRef.current = canvas
+    return () => canvas.dispose()
+  }, [])
+
+  const handleFileChange = (e) => {
     const file = e.target.files?.[0]
-    if (file) {
-      const reader = new FileReader()
-      reader.onload = () => {
-        setImage(reader.result as string)
-      }
-      reader.readAsDataURL(file)
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onload = function (f) {
+      fabric.Image.fromURL(f.target.result, (img) => {
+        img.set({
+          left: canvasWidth / 2 - img.width / 4,
+          top: canvasHeight / 2 - img.height / 4,
+          scaleX: 0.5,
+          scaleY: 0.5,
+          hasRotatingPoint: true,
+          cornerStyle: "circle",
+          transparentCorners: false,
+          cornerColor: "black",
+        })
+        canvasRef.current.add(img)
+        canvasRef.current.setActiveObject(img)
+        canvasRef.current.renderAll()
+      })
     }
+    reader.readAsDataURL(file)
   }
 
   return (
     <div className="flex w-full h-screen">
-      {/* Sidebar */}
-      <div className="w-1/4 p-6 border-r border-black">
-        <h1 className="text-3xl tracking-wider font-[505] mb-6">DARKROOM EDITOR</h1>
-        <div>
-          <p className="font-semibold mb-2">UPLOAD PRINT</p>
-          <input type="file" onChange={handleUpload} className="mb-4" />
-          <p className="text-sm text-gray-600">Drag, scale, rotate print freely</p>
-        </div>
+      <div className="w-[320px] p-4 border-r border-black">
+        <h2 className="font-semibold text-lg mb-4">DARKROOM EDITOR</h2>
+        <label className="text-sm font-semibold block mb-2">UPLOAD PRINT</label>
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleFileChange}
+          accept="image/*"
+          className="mb-4"
+        />
+        <p className="text-xs">Drag, scale, rotate print freely</p>
       </div>
-
-      {/* Editor Area */}
-      <div className="relative w-3/4 flex items-center justify-center bg-white overflow-hidden">
-        <div className="relative w-[600px] h-[800px]">
-          <Image
-            src="/mockups/MOCAP_FRONT_BACK.png"
-            alt="Mockup Hoodie"
-            layout="fill"
-            objectFit="contain"
-            priority
-          />
-
-          {image && (
-            <Rnd
-              bounds="parent"
-              size={{ width: size.width, height: size.height }}
-              position={{ x: position.x, y: position.y }}
-              onDragStop={(_, d) => setPosition({ x: d.x, y: d.y })}
-              onResizeStop={(_, __, ref, ___, pos) => {
-                setSize({
-                  width: parseInt(ref.style.width),
-                  height: parseInt(ref.style.height),
-                })
-                setPosition(pos)
-              }}
-            >
-              <img
-                src={image}
-                alt="Uploaded design"
-                className="w-full h-full object-contain pointer-events-auto border border-black"
-              />
-            </Rnd>
-          )}
-        </div>
+      <div className="flex-1 flex items-center justify-center">
+        <canvas id="editor-canvas" className="border" />
       </div>
     </div>
   )
 }
-
-export default dynamic(() => Promise.resolve(DarkroomEditor), { ssr: false })
