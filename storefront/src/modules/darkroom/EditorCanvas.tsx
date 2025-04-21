@@ -3,13 +3,17 @@
 import React, { useRef, useState } from "react"
 import { Stage, Layer, Image as KonvaImage, Transformer } from "react-konva"
 import { useImage } from "react-konva"
-import { useDarkroomStore } from "./store"
 
 interface UploadedImageProps {
   imageUrl: string
   isSelected: boolean
   onSelect: () => void
   onChange: (newAttrs: any) => void
+  x: number
+  y: number
+  scaleX: number
+  scaleY: number
+  rotation: number
 }
 
 const UploadedImage = ({
@@ -17,16 +21,33 @@ const UploadedImage = ({
   isSelected,
   onSelect,
   onChange,
+  x,
+  y,
+  scaleX,
+  scaleY,
+  rotation,
 }: UploadedImageProps) => {
   const shapeRef = useRef<any>(null)
   const trRef = useRef<any>(null)
   const [image] = useImage(imageUrl)
+
+  React.useEffect(() => {
+    if (isSelected && trRef.current && shapeRef.current) {
+      trRef.current.nodes([shapeRef.current])
+      trRef.current.getLayer()?.batchDraw()
+    }
+  }, [isSelected])
 
   return (
     <>
       <KonvaImage
         image={image}
         draggable
+        x={x}
+        y={y}
+        scaleX={scaleX}
+        scaleY={scaleY}
+        rotation={rotation}
         ref={shapeRef}
         onClick={onSelect}
         onTap={onSelect}
@@ -55,30 +76,8 @@ const UploadedImage = ({
             scaleY,
           })
         }}
-        {...(image && {
-          width: image.width,
-          height: image.height,
-        })}
-        {...(isSelected && { shadowColor: "black", shadowBlur: 10 })}
-        {...(shapeRef.current && {
-          x: shapeRef.current.x(),
-          y: shapeRef.current.y(),
-        })}
       />
-      {isSelected && (
-        <Transformer
-          ref={trRef}
-          boundBoxFunc={(oldBox, newBox) => {
-            // limit resize
-            if (newBox.width < 50 || newBox.height < 50) {
-              return oldBox
-            }
-            return newBox
-          }}
-          anchorSize={8}
-          rotateEnabled={true}
-        />
-      )}
+      {isSelected && <Transformer ref={trRef} rotateEnabled={true} />} 
     </>
   )
 }
@@ -86,13 +85,14 @@ const UploadedImage = ({
 export const EditorCanvas = () => {
   const [imageUrl, setImageUrl] = useState<string | null>(null)
   const [imageProps, setImageProps] = useState<any>({
-    x: 150,
-    y: 100,
+    x: 180,
+    y: 180,
     scaleX: 1,
     scaleY: 1,
     rotation: 0,
   })
   const [selected, setSelected] = useState<boolean>(false)
+  const [mockup] = useImage("/mockups/MOCAP_FRONT_BACK.png")
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -105,7 +105,7 @@ export const EditorCanvas = () => {
   return (
     <div className="flex flex-col md:flex-row w-full h-[85vh]">
       <div className="w-full md:w-1/3 p-4 border-r">
-        <h2 className="text-2xl font-bold mb-4">Upload Print</h2>
+        <h2 className="text-2xl font-bold mb-4">UPLOAD PRINT</h2>
         <input type="file" accept="image/*" onChange={handleFileChange} />
         <p className="text-sm mt-2">Drag, scale, rotate print freely</p>
       </div>
@@ -117,13 +117,9 @@ export const EditorCanvas = () => {
           className="border shadow-lg bg-white"
         >
           <Layer>
-            {/* Макет худи (левой части) */}
-            <KonvaImage
-              image={useImage("/mockups/MOCAP_FRONT_BACK.png")[0]}
-              width={600}
-              height={700}
-            />
-            {/* Загруженная картинка */}
+            {mockup && (
+              <KonvaImage image={mockup} width={600} height={700} />
+            )}
             {imageUrl && (
               <UploadedImage
                 imageUrl={imageUrl}
@@ -141,3 +137,5 @@ export const EditorCanvas = () => {
     </div>
   )
 }
+
+export default EditorCanvas
