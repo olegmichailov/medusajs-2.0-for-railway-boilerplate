@@ -8,9 +8,10 @@ export default function EditorCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const fabricRef = useRef<fabric.Canvas | null>(null)
 
-  const [tool, setTool] = useState<"draw" | "select">("select")
+  const [tool, setTool] = useState<"draw" | "select" | "text">("select")
   const [color, setColor] = useState("#ffffff")
   const [brushSize, setBrushSize] = useState(4)
+  const [textInput, setTextInput] = useState("")
 
   useEffect(() => {
     if (!canvasRef.current) return
@@ -54,6 +55,25 @@ export default function EditorCanvas() {
     link.click()
   }
 
+  const handleAddText = () => {
+    const canvas = fabricRef.current
+    if (!canvas || !textInput.trim()) return
+
+    const text = new fabric.Textbox(textInput, {
+      left: 100,
+      top: 100,
+      fontSize: 28,
+      fill: color,
+      fontFamily: "Arial",
+      editable: true,
+    })
+
+    canvas.add(text)
+    canvas.setActiveObject(text)
+    canvas.requestRenderAll()
+    setTextInput("")
+  }
+
   return (
     <div className="w-full font-sans text-white">
       <div className="mb-4 flex flex-wrap items-center gap-4">
@@ -73,6 +93,14 @@ export default function EditorCanvas() {
         >
           Draw
         </button>
+        <button
+          onClick={() => setTool("text")}
+          className={`px-3 py-1 uppercase text-sm tracking-wide border ${
+            tool === "text" ? "bg-white text-black" : "bg-black border-white"
+          }`}
+        >
+          Text
+        </button>
 
         {tool === "draw" && (
           <div className="flex items-center gap-2">
@@ -84,6 +112,25 @@ export default function EditorCanvas() {
               value={brushSize}
               onChange={(e) => setBrushSize(Number(e.target.value))}
             />
+            <HexColorPicker color={color} onChange={setColor} />
+          </div>
+        )}
+
+        {tool === "text" && (
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              placeholder="Add text..."
+              value={textInput}
+              onChange={(e) => setTextInput(e.target.value)}
+              className="px-2 py-1 text-black text-sm"
+            />
+            <button
+              onClick={handleAddText}
+              className="border px-3 py-1 text-sm uppercase hover:bg-white hover:text-black"
+            >
+              Add
+            </button>
             <HexColorPicker color={color} onChange={setColor} />
           </div>
         )}
