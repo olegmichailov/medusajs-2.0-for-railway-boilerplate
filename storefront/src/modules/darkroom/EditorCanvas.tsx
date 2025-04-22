@@ -1,3 +1,4 @@
+// src/modules/darkroom/EditorCanvas.tsx
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -56,15 +57,10 @@ const EditorCanvas = () => {
     }
   };
 
-  useEffect(() => {
-    if (transformerRef.current && selectedImageIndex !== null) {
-      const node = stageRef.current.findOne(`#img-${selectedImageIndex}`);
-      if (node) {
-        transformerRef.current.nodes([node]);
-        transformerRef.current.getLayer().batchDraw();
-      }
-    }
-  }, [selectedImageIndex]);
+  const scalePos = (pos: { x: number; y: number }) => ({
+    x: (pos.x * CANVAS_WIDTH) / DISPLAY_WIDTH,
+    y: (pos.y * CANVAS_HEIGHT) / DISPLAY_HEIGHT,
+  });
 
   const handlePointerDown = (e: any) => {
     if (e.target === e.target.getStage()) {
@@ -90,10 +86,15 @@ const EditorCanvas = () => {
 
   const handlePointerUp = () => setIsDrawing(false);
 
-  const scalePos = (pos: { x: number; y: number }) => ({
-    x: (pos.x * CANVAS_WIDTH) / DISPLAY_WIDTH,
-    y: (pos.y * CANVAS_HEIGHT) / DISPLAY_HEIGHT,
-  });
+  useEffect(() => {
+    if (transformerRef.current && selectedImageIndex !== null) {
+      const node = stageRef.current.findOne(`#img-${selectedImageIndex}`);
+      if (node) {
+        transformerRef.current.nodes([node]);
+        transformerRef.current.getLayer().batchDraw();
+      }
+    }
+  }, [selectedImageIndex]);
 
   return (
     <div className="w-screen h-screen bg-white overflow-hidden flex flex-col lg:flex-row">
@@ -128,9 +129,9 @@ const EditorCanvas = () => {
               newImages[selectedImageIndex].opacity = Number(e.target.value);
               setImages(newImages);
             }
-          }} className="w-full mb-2 h-[2px] bg-black appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2 [&::-webkit-slider-thumb]:h-2 [&::-webkit-slider-thumb]:bg-black [&::-webkit-slider-thumb]:rounded-none" />
+          }} className="w-full mb-2 h-[2px] bg-black appearance-none cursor-pointer" />
           <label className="block text-xs mb-1">Brush Size: {brushSize}px</label>
-          <input type="range" min="1" max="30" value={brushSize} onChange={(e) => setBrushSize(Number(e.target.value))} className="w-full mb-2 h-[2px] bg-black appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2 [&::-webkit-slider-thumb]:h-2 [&::-webkit-slider-thumb]:bg-black [&::-webkit-slider-thumb]:rounded-none" />
+          <input type="range" min="1" max="30" value={brushSize} onChange={(e) => setBrushSize(Number(e.target.value))} className="w-full mb-2 h-[2px] bg-black appearance-none cursor-pointer" />
           <label className="block text-xs mb-1">Brush Color</label>
           <input type="color" value={brushColor} onChange={(e) => setBrushColor(e.target.value)} className="w-8 h-8 border p-0 cursor-pointer" />
         </div>
@@ -178,7 +179,7 @@ const EditorCanvas = () => {
                   globalCompositeOperation="source-over"
                 />
               ))}
-              {!isMobile && selectedImageIndex !== null && <Transformer ref={transformerRef} rotateEnabled={true} />}
+              {selectedImageIndex !== null && <Transformer ref={transformerRef} rotateEnabled={true} />}
             </Layer>
           </Stage>
         </div>
