@@ -1,56 +1,28 @@
+// src/modules/darkroom/EditorCanvas.tsx
 "use client";
 
 import { useEffect, useRef, useState } from "react";
 import { Stage, Layer, Image as KonvaImage, Transformer } from "react-konva";
 import useImage from "use-image";
 
-const CANVAS_HEIGHT = 750;
-const MOCKUP_ASPECT_RATIO = 985 / 1271;
-const CANVAS_WIDTH = Math.round(CANVAS_HEIGHT * MOCKUP_ASPECT_RATIO);
+const CANVAS_WIDTH = 985;
+const CANVAS_HEIGHT = 1271;
+const DISPLAY_WIDTH = 500;
+const DISPLAY_HEIGHT = 645; // сохранение пропорции 985:1271
 
-export default function EditorCanvas() {
+const EditorCanvas = () => {
   const [images, setImages] = useState<any[]>([]);
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
   const [opacity, setOpacity] = useState(1);
   const [mockupType, setMockupType] = useState<"front" | "back">("front");
+  const [copiedImage, setCopiedImage] = useState<any | null>(null);
 
   const [mockupImage] = useImage(
     mockupType === "front" ? "/mockups/MOCAP_FRONT.png" : "/mockups/MOCAP_BACK.png"
   );
 
   const transformerRef = useRef<any>(null);
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const isMac = /(Mac|iPhone|iPod|iPad)/i.test(navigator.platform);
-      const isCopy = (isMac && e.metaKey) || (!isMac && e.ctrlKey);
-
-      if (isCopy && e.key.toLowerCase() === "c" && selectedImageIndex !== null) {
-        const copied = images[selectedImageIndex];
-        const clone = {
-          ...copied,
-          x: copied.x + 30,
-          y: copied.y + 30,
-          id: Date.now().toString(),
-        };
-        setImages((prev) => [...prev, clone]);
-        setSelectedImageIndex(images.length);
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [images, selectedImageIndex]);
-
-  useEffect(() => {
-    if (transformerRef.current && selectedImageIndex !== null) {
-      const stage = transformerRef.current.getStage();
-      const selectedNode = stage.findOne(`#img-${selectedImageIndex}`);
-      if (selectedNode) {
-        transformerRef.current.nodes([selectedNode]);
-        transformerRef.current.getLayer().batchDraw();
-      }
-    }
-  }, [selectedImageIndex]);
+  const stageRef = useRef<any>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -63,9 +35,10 @@ export default function EditorCanvas() {
           const newImage = {
             image: img,
             x: 100,
-            y: 100,
-            width: img.width / 3,
-            height: img.height / 3,
+            y: 150,
+            width: img.width / 4,
+            height: img.height / 4,
+            rotation: 0,
             opacity: 1,
             id: Date.now().toString(),
           };
@@ -77,86 +50,122 @@ export default function EditorCanvas() {
     }
   };
 
-  const handleDeselect = (e: any) => {
-    const clicked = e.target;
-    if (clicked === clicked.getStage()) {
-      setSelectedImageIndex(null);
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
+      const copy = (isMac && e.metaKey && e.key === "c") || (!isMac && e.ctrlKey && e.key === "c");
+      const paste = (isMac && e.metaKey && e.key === "v") || (!isMac && e.ctrlKey && e.key === "v");
+
+      if (copy && selectedImageIndex !== null) {
+        setCopiedImage({ ...images[selectedImageIndex] });
+      }
+      if (paste && copiedImage) {
+        const duplicated = {
+          ...copiedImage,
+          id: Date.now().toString(),
+          x: copiedImage.x + 20,
+          y: copiedImage.y + 20,
+        };
+        setImages((prev) => [...prev, duplicated]);
+        setSelectedImageIndex(images.length);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [copiedImage, selectedImageIndex, images]);
+
+  useEffect(() => {
+    if (transformerRef.current && selectedImageIndex !== null) {
+      transformerRef.current.nodes([
+        stageRef.current.findOne(`#img-${selectedImageIndex}`),
+      ]);
+      transformerRef.current.getLayer().batchDraw();
     }
+  }, [selectedImageIndex]);
+
+  const handleDeselect = (e: any) => {
+    const clickedOnEmpty = e.target === e.target.getStage();
+    if (clickedOnEmpty) setSelectedImageIndex(null);
   };
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden">
-      <div className="flex flex-1">
-        <div className="w-1/2 p-10">
-          <div className="mb-4">
-            <label className="block text-lg font-semibold mb-2">Upload Print</label>
-            <input type="file" accept="image/*" onChange={handleFileChange} />
-            <p className="text-sm text-gray-500 mt-2">Drag, scale, rotate print freely</p>
-          </div>
-          <div className="mb-4">
-            <label className="text-sm">Opacity: {Math.round(opacity * 100)}%</label>
-            <input
-              type="range"
-              min="0"
-              max="1"
-              step="0.01"
-              value={opacity}
-              className="w-full appearance-none bg-black h-px mt-1"
-              onChange={(e) => {
-                const val = Number(e.target.value);
-                setOpacity(val);
-                if (selectedImageIndex !== null) {
-                  const updated = [...images];
-                  updated[selectedImageIndex].opacity = val;
-                  setImages(updated);
-                }
-              }}
-            />
-          </div>
-          <div className="flex gap-2">
-            <button className="border px-4 py-2" onClick={() => setMockupType("front")}>
-              Front
-            </button>
-            <button className="border px-4 py-2" onClick={() => setMockupType("back")}>
-              Back
-            </button>
-            <button className="bg-black text-white px-4 py-2" onClick={() => console.log("Print", images)}>
-              Print
-            </button>
-          </div>
+    <div className="w-screen h-screen flex bg-white">
+      <div className="w-1/2 p-10">
+        <div className="mb-4">
+          <label className="block text-lg font-semibold mb-2">Upload Print</label>
+          <input type="file" accept="image/*" onChange={handleFileChange} />
+          <p className="text-sm text-gray-500 mt-2">Drag, scale, rotate print freely</p>
         </div>
-
-        <div className="w-1/2 flex items-center justify-center overflow-hidden">
-          {mockupImage && (
-            <Stage
-              width={CANVAS_WIDTH}
-              height={CANVAS_HEIGHT}
-              onMouseDown={handleDeselect}
-              style={{ border: "1px dashed #ccc" }}
-            >
-              <Layer>
-                <KonvaImage image={mockupImage} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} />
-                {images.map((img, index) => (
-                  <KonvaImage
-                    key={img.id}
-                    id={`img-${index}`}
-                    image={img.image}
-                    x={img.x}
-                    y={img.y}
-                    width={img.width}
-                    height={img.height}
-                    opacity={img.opacity}
-                    draggable
-                    onClick={() => setSelectedImageIndex(index)}
-                    onTap={() => setSelectedImageIndex(index)}
-                  />
-                ))}
-                {selectedImageIndex !== null && <Transformer ref={transformerRef} />}
-              </Layer>
-            </Stage>
-          )}
+        <div className="mb-4">
+          <label className="block text-sm font-medium">Opacity: {Math.round(opacity * 100)}%</label>
+          <input
+            type="range"
+            min="0"
+            max="1"
+            step="0.01"
+            value={opacity}
+            onChange={(e) => {
+              setOpacity(Number(e.target.value));
+              if (selectedImageIndex !== null) {
+                const newImages = [...images];
+                newImages[selectedImageIndex].opacity = Number(e.target.value);
+                setImages(newImages);
+              }
+            }}
+            className="w-full h-[2px] bg-black appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-black [&::-webkit-slider-thumb]:rounded-none"
+          />
+        </div>
+        <div className="flex gap-2">
+          <button className="border px-4 py-2" onClick={() => setMockupType("front")}>Front</button>
+          <button className="border px-4 py-2" onClick={() => setMockupType("back")}>Back</button>
+          <button
+            className="bg-black text-white px-4 py-2"
+            onClick={() => console.log("Print", images)}
+          >
+            Print
+          </button>
+        </div>
+      </div>
+      <div className="w-1/2 h-full flex items-center justify-center">
+        <div className="border border-dashed border-gray-400" style={{ width: DISPLAY_WIDTH, height: DISPLAY_HEIGHT }}>
+          <Stage
+            width={DISPLAY_WIDTH}
+            height={DISPLAY_HEIGHT}
+            scale={{ x: DISPLAY_WIDTH / CANVAS_WIDTH, y: DISPLAY_HEIGHT / CANVAS_HEIGHT }}
+            ref={stageRef}
+            onMouseDown={handleDeselect}
+          >
+            <Layer>
+              {mockupImage && (
+                <KonvaImage
+                  image={mockupImage}
+                  width={CANVAS_WIDTH}
+                  height={CANVAS_HEIGHT}
+                />
+              )}
+              {images.map((img, index) => (
+                <KonvaImage
+                  key={img.id}
+                  id={`img-${index}`}
+                  image={img.image}
+                  x={img.x}
+                  y={img.y}
+                  width={img.width}
+                  height={img.height}
+                  rotation={img.rotation}
+                  opacity={img.opacity}
+                  draggable
+                  onClick={() => setSelectedImageIndex(index)}
+                  onTap={() => setSelectedImageIndex(index)}
+                />
+              ))}
+              {selectedImageIndex !== null && <Transformer ref={transformerRef} rotateEnabled={true} />}
+            </Layer>
+          </Stage>
         </div>
       </div>
     </div>
   );
-}
+};
+
+export default EditorCanvas;
