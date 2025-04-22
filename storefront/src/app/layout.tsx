@@ -29,11 +29,16 @@ export const metadata: Metadata = {
   },
 }
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  const isDarkroom = typeof window !== "undefined" && window.location.pathname.includes("/darkroom")
+
   return (
     <html lang="en" data-mode="light">
       <head>
-        {/* Пре-загрузка шрифта для корректного рендеринга */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
@@ -46,7 +51,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="icon" href="/favicon.ico" />
         <title>GMORKL STORE</title>
 
-        {/* Google Analytics */}
         <script
           async
           src="https://www.googletagmanager.com/gtag/js?id=G-7JL5RF98QY"
@@ -66,9 +70,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="m-0 p-0 font-sans tracking-wide text-base antialiased bg-white text-[#111827]">
         <Nav />
-        {/* 👇 убрали лишние стили и отступы у main */}
         <main className="m-0 p-0">{children}</main>
-        <Footer />
+        {/* Отображаем Footer везде, кроме /darkroom */}
+        {!isDarkroom && <Footer />}
       </body>
     </html>
   )
