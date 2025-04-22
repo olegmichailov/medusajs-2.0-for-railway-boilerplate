@@ -1,15 +1,13 @@
-// src/modules/darkroom/EditorCanvas.tsx
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Stage, Layer, Image as KonvaImage, Transformer, Line } from "react-konva";
+import { Stage, Layer, Image as KonvaImage, Line, Transformer } from "react-konva";
 import useImage from "use-image";
-import { HexColorPicker } from "react-colorful";
 
 const CANVAS_WIDTH = 985;
 const CANVAS_HEIGHT = 1271;
-const DISPLAY_WIDTH = 500;
-const DISPLAY_HEIGHT = 645;
+const DISPLAY_HEIGHT = 750;
+const DISPLAY_WIDTH = (DISPLAY_HEIGHT * CANVAS_WIDTH) / CANVAS_HEIGHT;
 
 const EditorCanvas = () => {
   const [images, setImages] = useState<any[]>([]);
@@ -17,19 +15,18 @@ const EditorCanvas = () => {
   const [opacity, setOpacity] = useState(1);
   const [mockupType, setMockupType] = useState<"front" | "back">("front");
   const [copiedImage, setCopiedImage] = useState<any | null>(null);
+  const [drawings, setDrawings] = useState<any[]>([]);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [brushColor, setBrushColor] = useState("#d63384");
+  const [brushSize, setBrushSize] = useState(4);
+  const [mode, setMode] = useState<"move" | "brush">("move");
 
   const [mockupImage] = useImage(
     mockupType === "front" ? "/mockups/MOCAP_FRONT.png" : "/mockups/MOCAP_BACK.png"
   );
 
-  const [tool, setTool] = useState<"move" | "brush">("move");
-  const [lines, setLines] = useState<any[]>([]);
-  const [isDrawing, setIsDrawing] = useState(false);
-  const [brushColor, setBrushColor] = useState("#f021c3");
-  const [brushSize, setBrushSize] = useState(4);
-
-  const stageRef = useRef<any>(null);
   const transformerRef = useRef<any>(null);
+  const stageRef = useRef<any>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -83,33 +80,41 @@ const EditorCanvas = () => {
 
   useEffect(() => {
     if (transformerRef.current && selectedImageIndex !== null) {
-      transformerRef.current.nodes([
-        stageRef.current.findOne(`#img-${selectedImageIndex}`),
-      ]);
-      transformerRef.current.getLayer().batchDraw();
+      const node = stageRef.current.findOne(`#img-${selectedImageIndex}`);
+      if (node) {
+        transformerRef.current.nodes([node]);
+        transformerRef.current.getLayer().batchDraw();
+      }
     }
   }, [selectedImageIndex]);
 
-  const handleDeselect = (e: any) => {
-    const clickedOnEmpty = e.target === e.target.getStage();
-    if (clickedOnEmpty) setSelectedImageIndex(null);
-  };
+  const scalePos = (pos: { x: number; y: number }) => ({
+    x: (pos.x * CANVAS_WIDTH) / DISPLAY_WIDTH,
+    y: (pos.y * CANVAS_HEIGHT) / DISPLAY_HEIGHT,
+  });
 
   const handleMouseDown = (e: any) => {
-    if (tool !== "brush") return;
+    if (e.target === e.target.getStage()) {
+      setSelectedImageIndex(null);
+    }
+
+    if (mode !== "brush") return;
+    const pos = stageRef.current.getPointerPosition();
+    if (!pos) return;
+    const scaled = scalePos(pos);
     setIsDrawing(true);
-    const pos = e.target.getStage().getPointerPosition();
-    setLines([...lines, { tool, points: [pos.x, pos.y], stroke: brushColor, strokeWidth: brushSize }]);
+    setDrawings([...drawings, { tool: "pen", color: brushColor, size: brushSize, points: [scaled.x, scaled.y] }]);
   };
 
-  const handleMouseMove = (e: any) => {
-    if (!isDrawing || tool !== "brush") return;
-    const stage = e.target.getStage();
-    const point = stage.getPointerPosition();
-    let lastLine = lines[lines.length - 1];
-    lastLine.points = lastLine.points.concat([point.x, point.y]);
-    lines.splice(lines.length - 1, 1, lastLine);
-    setLines(lines.concat());
+  const handleMouseMove = () => {
+    if (!isDrawing || mode !== "brush") return;
+    const pos = stageRef.current.getPointerPosition();
+    if (!pos) return;
+    const scaled = scalePos(pos);
+    let lastLine = drawings[drawings.length - 1];
+    lastLine.points = lastLine.points.concat([scaled.x, scaled.y]);
+    drawings.splice(drawings.length - 1, 1, lastLine);
+    setDrawings(drawings.concat());
   };
 
   const handleMouseUp = () => setIsDrawing(false);
@@ -121,8 +126,9 @@ const EditorCanvas = () => {
           <label className="block text-lg font-semibold mb-2">Upload Print</label>
           <input type="file" accept="image/*" onChange={handleFileChange} />
         </div>
+
         <div className="mb-4">
-          <label className="block text-sm font-medium mb-1">Opacity: {Math.round(opacity * 100)}%</label>
+          <label className="block text-sm font-medium">Opacity: {Math.round(opacity * 100)}%</label>
           <input
             type="range"
             min="0"
@@ -137,37 +143,50 @@ const EditorCanvas = () => {
                 setImages(newImages);
               }
             }}
-            className="w-full h-[2px] bg-black appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-black [&::-webkit-slider-thumb]:rounded-none"
+            className="w-full h-[2px] bg-black appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2 [&::-webkit-slider-thumb]:h-2 [&::-webkit-slider-thumb]:bg-black [&::-webkit-slider-thumb]:rounded-none"
           />
         </div>
-        <div className="mb-4">
-          <label className="block text-sm font-medium mb-1">Brush Size: {brushSize}px</label>
-          <input
-            type="range"
-            min="1"
-            max="50"
-            value={brushSize}
-            onChange={(e) => setBrushSize(Number(e.target.value))}
-            className="w-full h-[2px] bg-black appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-black [&::-webkit-slider-thumb]:rounded-none"
-          />
-        </div>
-        <div className="mb-4">
-          <label className="block text-sm font-medium mb-1">Brush Color</label>
-          <HexColorPicker color={brushColor} onChange={setBrushColor} />
-        </div>
-        <div className="flex gap-2 mt-4">
-          <button className="border px-4 py-2" onClick={() => setTool("move")}>Move</button>
-          <button className="border px-4 py-2" onClick={() => setTool("brush")}>Brush</button>
-          <button className="border px-4 py-2" onClick={() => setMockupType("front")}>Front</button>
-          <button className="border px-4 py-2" onClick={() => setMockupType("back")}>Back</button>
-        </div>
-        <div className="mt-4">
+
+        <div className="flex flex-wrap gap-2 mb-4">
+          <button className="border px-4 py-1 text-sm" onClick={() => setMockupType("front")}>Front</button>
+          <button className="border px-4 py-1 text-sm" onClick={() => setMockupType("back")}>Back</button>
+          <button className="border px-4 py-1 text-sm" onClick={() => setDrawings([])}>Clear Drawing</button>
+          <button className="border px-4 py-1 text-sm" onClick={() => setMode("move")}>Move</button>
+          <button className="border px-4 py-1 text-sm" onClick={() => setMode("brush")}>Brush</button>
           <button
-            className="bg-black text-white px-4 py-2"
-            onClick={() => console.log("Download stub")}
+            className="bg-black text-white px-4 py-1 text-sm"
+            onClick={() => {
+              const uri = stageRef.current.toDataURL({ pixelRatio: 2 });
+              const a = document.createElement("a");
+              a.href = uri;
+              a.download = "composition.png";
+              a.click();
+            }}
           >
             Download
           </button>
+        </div>
+
+        <div className="mb-4">
+          <label className="block text-sm font-medium mb-1">Brush Color</label>
+          <input
+            type="color"
+            value={brushColor}
+            onChange={(e) => setBrushColor(e.target.value)}
+            className="w-8 h-8 border p-0 cursor-pointer"
+          />
+        </div>
+
+        <div className="mb-4">
+          <label className="block text-sm font-medium">Brush Size</label>
+          <input
+            type="range"
+            min="1"
+            max="30"
+            value={brushSize}
+            onChange={(e) => setBrushSize(Number(e.target.value))}
+            className="w-full h-[2px] bg-black appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2 [&::-webkit-slider-thumb]:h-2 [&::-webkit-slider-thumb]:bg-black [&::-webkit-slider-thumb]:rounded-none"
+          />
         </div>
       </div>
 
@@ -178,20 +197,13 @@ const EditorCanvas = () => {
             height={DISPLAY_HEIGHT}
             scale={{ x: DISPLAY_WIDTH / CANVAS_WIDTH, y: DISPLAY_HEIGHT / CANVAS_HEIGHT }}
             ref={stageRef}
-            onMouseDown={(e) => {
-              handleMouseDown(e);
-              handleDeselect(e);
-            }}
+            onMouseDown={handleMouseDown}
             onMousemove={handleMouseMove}
             onMouseup={handleMouseUp}
           >
             <Layer>
               {mockupImage && (
-                <KonvaImage
-                  image={mockupImage}
-                  width={CANVAS_WIDTH}
-                  height={CANVAS_HEIGHT}
-                />
+                <KonvaImage image={mockupImage} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} />
               )}
               {images.map((img, index) => (
                 <KonvaImage
@@ -209,12 +221,12 @@ const EditorCanvas = () => {
                   onTap={() => setSelectedImageIndex(index)}
                 />
               ))}
-              {lines.map((line, i) => (
+              {drawings.map((line, i) => (
                 <Line
                   key={i}
                   points={line.points}
-                  stroke={line.stroke}
-                  strokeWidth={line.strokeWidth}
+                  stroke={line.color}
+                  strokeWidth={line.size}
                   tension={0.5}
                   lineCap="round"
                   globalCompositeOperation="source-over"
