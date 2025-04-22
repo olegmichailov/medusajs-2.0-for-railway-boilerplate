@@ -21,7 +21,7 @@ const nextConfig = {
       },
       {
         protocol: "https",
-        hostname: process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL?.replace('https://', ''),
+        hostname: process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL?.replace("https://", ""),
       },
       {
         protocol: "https",
@@ -35,15 +35,28 @@ const nextConfig = {
         protocol: "https",
         hostname: "medusa-server-testing.s3.us-east-1.amazonaws.com",
       },
-      ...(process.env.NEXT_PUBLIC_MINIO_ENDPOINT ? [{
-        protocol: "https",
-        hostname: process.env.NEXT_PUBLIC_MINIO_ENDPOINT,
-      }] : []),
+      ...(process.env.NEXT_PUBLIC_MINIO_ENDPOINT
+        ? [
+            {
+              protocol: "https",
+              hostname: process.env.NEXT_PUBLIC_MINIO_ENDPOINT,
+            },
+          ]
+        : []),
     ],
   },
   serverRuntimeConfig: {
-    port: process.env.PORT || 3000
-  }
-}
+    port: process.env.PORT || 3000,
+  },
+  webpack: (config, { isServer }) => {
+    if (isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        canvas: false, // 🔧 отключаем canvas, чтобы не падал билд
+      };
+    }
+    return config;
+  },
+};
 
-module.exports = nextConfig
+module.exports = nextConfig;
