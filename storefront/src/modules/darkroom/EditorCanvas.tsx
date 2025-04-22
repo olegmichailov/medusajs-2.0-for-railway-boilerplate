@@ -24,9 +24,8 @@ const EditorCanvas = () => {
   const [brushSize, setBrushSize] = useState(4);
   const [mode, setMode] = useState<"move" | "brush">("brush");
   const [menuOpen, setMenuOpen] = useState(false);
-  const [mockupImage] = useImage(
-    mockupType === "front" ? "/mockups/MOCAP_FRONT.png" : "/mockups/MOCAP_BACK.png"
-  );
+  const [mockupImage] = useImage(mockupType === "front" ? "/mockups/MOCAP_FRONT.png" : "/mockups/MOCAP_BACK.png");
+
   const transformerRef = useRef<any>(null);
   const stageRef = useRef<any>(null);
 
@@ -47,8 +46,6 @@ const EditorCanvas = () => {
             rotation: 0,
             opacity: 1,
             id: Date.now().toString(),
-            scaleX: 1,
-            scaleY: 1,
           };
           setImages((prev) => [...prev, newImage]);
           setSelectedImageIndex(images.length);
@@ -59,10 +56,15 @@ const EditorCanvas = () => {
     }
   };
 
-  const scalePos = (pos: { x: number; y: number }) => ({
-    x: (pos.x * CANVAS_WIDTH) / DISPLAY_WIDTH,
-    y: (pos.y * CANVAS_HEIGHT) / DISPLAY_HEIGHT,
-  });
+  useEffect(() => {
+    if (transformerRef.current && selectedImageIndex !== null) {
+      const node = stageRef.current.findOne(`#img-${selectedImageIndex}`);
+      if (node) {
+        transformerRef.current.nodes([node]);
+        transformerRef.current.getLayer().batchDraw();
+      }
+    }
+  }, [selectedImageIndex]);
 
   const handlePointerDown = (e: any) => {
     if (e.target === e.target.getStage()) {
@@ -88,15 +90,10 @@ const EditorCanvas = () => {
 
   const handlePointerUp = () => setIsDrawing(false);
 
-  useEffect(() => {
-    if (transformerRef.current && selectedImageIndex !== null) {
-      const node = stageRef.current.findOne(`#img-${selectedImageIndex}`);
-      if (node) {
-        transformerRef.current.nodes([node]);
-        transformerRef.current.getLayer().batchDraw();
-      }
-    }
-  }, [selectedImageIndex]);
+  const scalePos = (pos: { x: number; y: number }) => ({
+    x: (pos.x * CANVAS_WIDTH) / DISPLAY_WIDTH,
+    y: (pos.y * CANVAS_HEIGHT) / DISPLAY_HEIGHT,
+  });
 
   return (
     <div className="w-screen h-screen bg-white overflow-hidden flex flex-col lg:flex-row">
@@ -131,14 +128,13 @@ const EditorCanvas = () => {
               newImages[selectedImageIndex].opacity = Number(e.target.value);
               setImages(newImages);
             }
-          }} className="w-full mb-2 h-[2px] bg-black appearance-none cursor-pointer" />
+          }} className="w-full mb-2 h-[2px] bg-black appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2 [&::-webkit-slider-thumb]:h-2 [&::-webkit-slider-thumb]:bg-black [&::-webkit-slider-thumb]:rounded-none" />
           <label className="block text-xs mb-1">Brush Size: {brushSize}px</label>
-          <input type="range" min="1" max="30" value={brushSize} onChange={(e) => setBrushSize(Number(e.target.value))} className="w-full mb-2 h-[2px] bg-black appearance-none cursor-pointer" />
+          <input type="range" min="1" max="30" value={brushSize} onChange={(e) => setBrushSize(Number(e.target.value))} className="w-full mb-2 h-[2px] bg-black appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2 [&::-webkit-slider-thumb]:h-2 [&::-webkit-slider-thumb]:bg-black [&::-webkit-slider-thumb]:rounded-none" />
           <label className="block text-xs mb-1">Brush Color</label>
           <input type="color" value={brushColor} onChange={(e) => setBrushColor(e.target.value)} className="w-8 h-8 border p-0 cursor-pointer" />
         </div>
       </div>
-
       <div className="lg:w-1/2 h-full flex items-center justify-center">
         <div style={{ width: DISPLAY_WIDTH, height: DISPLAY_HEIGHT, transform: "translateY(-30px) scale(0.95)" }}>
           <Stage
@@ -165,8 +161,6 @@ const EditorCanvas = () => {
                   width={img.width}
                   height={img.height}
                   rotation={img.rotation}
-                  scaleX={img.scaleX || 1}
-                  scaleY={img.scaleY || 1}
                   opacity={img.opacity}
                   draggable={mode === "move"}
                   onClick={() => setSelectedImageIndex(index)}
