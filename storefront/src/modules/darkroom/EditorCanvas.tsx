@@ -21,7 +21,7 @@ const EditorCanvas = () => {
   const [isDrawing, setIsDrawing] = useState(false);
   const [brushColor, setBrushColor] = useState("#d63384");
   const [brushSize, setBrushSize] = useState(4);
-  const [mode, setMode] = useState<"move" | "brush">("move");
+  const [mode, setMode] = useState<"move" | "brush">("brush");
   const [menuOpen, setMenuOpen] = useState(false);
 
   const [mockupImage] = useImage(
@@ -83,7 +83,7 @@ const EditorCanvas = () => {
 
   useEffect(() => {
     if (transformerRef.current && selectedImageIndex !== null) {
-      const node = stageRef.current.findOne(#img-${selectedImageIndex});
+      const node = stageRef.current.findOne(`#img-${selectedImageIndex}`);
       if (node) {
         transformerRef.current.nodes([node]);
         transformerRef.current.getLayer().batchDraw();
@@ -99,6 +99,7 @@ const EditorCanvas = () => {
   const handleMouseDown = (e: any) => {
     if (e.target === e.target.getStage()) {
       setSelectedImageIndex(null);
+      if (isMobile) setMenuOpen(false);
     }
     if (mode !== "brush") return;
     const pos = stageRef.current.getPointerPosition();
@@ -122,18 +123,22 @@ const EditorCanvas = () => {
   const handleMouseUp = () => setIsDrawing(false);
 
   return (
-    <div className="w-screen h-screen bg-white overflow-hidden flex flex-col lg:flex-row">
-      <div className={lg:w-1/2 p-4 ${isMobile ? "absolute z-50 top-0 w-full bg-white" : ""}}>
+    <div className="relative w-screen h-screen bg-white overflow-hidden">
+      <div className="absolute top-0 left-0 w-full z-50 bg-white border-b flex items-center justify-between px-4 py-2">
+        <a href="/" className="text-sm font-bold">GMORKL</a>
         {isMobile && (
-          <button className="text-sm mb-2 border px-3 py-1" onClick={() => setMenuOpen(!menuOpen)}>Create</button>
+          <button className="text-sm border px-3 py-1" onClick={() => setMenuOpen(!menuOpen)}>Create</button>
         )}
-        <div className={${isMobile && !menuOpen ? "hidden" : "block"}}>
-          <div className="flex flex-wrap gap-2 mb-4 text-sm">
+      </div>
+
+      {(!isMobile || menuOpen) && (
+        <div className="absolute top-12 left-0 w-full z-40 bg-white px-4 pb-4 flex flex-col gap-2 text-sm">
+          <div className="flex flex-wrap gap-2">
+            <button className={`border px-3 py-1 ${mode === "move" ? "bg-black text-white" : ""}`} onClick={() => setMode("move")}>Move</button>
+            <button className={`border px-3 py-1 ${mode === "brush" ? "bg-black text-white" : ""}`} onClick={() => setMode("brush")}>Brush</button>
             <button className="border px-3 py-1" onClick={() => setMockupType("front")}>Front</button>
             <button className="border px-3 py-1" onClick={() => setMockupType("back")}>Back</button>
             <button className="border px-3 py-1" onClick={() => setDrawings([])}>Clear</button>
-            <button className={border px-3 py-1 ${mode === "move" ? "bg-black text-white" : ""}} onClick={() => setMode("move")}>Move</button>
-            <button className={border px-3 py-1 ${mode === "brush" ? "bg-black text-white" : ""}} onClick={() => setMode("brush")}>Brush</button>
             <button className="bg-black text-white px-3 py-1" onClick={() => {
               const uri = stageRef.current.toDataURL({ pixelRatio: 2 });
               const a = document.createElement("a");
@@ -142,8 +147,10 @@ const EditorCanvas = () => {
               a.click();
             }}>Download</button>
           </div>
-          <input type="file" accept="image/*" onChange={handleFileChange} className="mb-3" />
-          <label className="block text-xs mb-1">Opacity: {Math.round(opacity * 100)}%</label>
+
+          <input type="file" accept="image/*" onChange={handleFileChange} />
+
+          <label className="text-xs mt-1">Opacity</label>
           <input type="range" min="0" max="1" step="0.01" value={opacity} onChange={(e) => {
             setOpacity(Number(e.target.value));
             if (selectedImageIndex !== null) {
@@ -151,14 +158,17 @@ const EditorCanvas = () => {
               newImages[selectedImageIndex].opacity = Number(e.target.value);
               setImages(newImages);
             }
-          }} className="w-full mb-2 h-[2px] bg-black appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2 [&::-webkit-slider-thumb]:h-2 [&::-webkit-slider-thumb]:bg-black [&::-webkit-slider-thumb]:rounded-none" />
-          <label className="block text-xs mb-1">Brush Size: {brushSize}px</label>
-          <input type="range" min="1" max="30" value={brushSize} onChange={(e) => setBrushSize(Number(e.target.value))} className="w-full mb-2 h-[2px] bg-black appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2 [&::-webkit-slider-thumb]:h-2 [&::-webkit-slider-thumb]:bg-black [&::-webkit-slider-thumb]:rounded-none" />
-          <label className="block text-xs mb-1">Brush Color</label>
-          <input type="color" value={brushColor} onChange={(e) => setBrushColor(e.target.value)} className="w-8 h-8 border p-0 cursor-pointer" />
+          }} />
+
+          <label className="text-xs mt-1">Brush Size</label>
+          <input type="range" min="1" max="30" value={brushSize} onChange={(e) => setBrushSize(Number(e.target.value))} />
+
+          <label className="text-xs mt-1">Brush Color</label>
+          <input type="color" value={brushColor} onChange={(e) => setBrushColor(e.target.value)} className="w-8 h-8" />
         </div>
-      </div>
-      <div className="lg:w-1/2 h-full flex items-center justify-center">
+      )}
+
+      <div className="w-full h-full flex items-center justify-center">
         <div style={{ width: DISPLAY_WIDTH, height: DISPLAY_HEIGHT }}>
           <Stage
             width={DISPLAY_WIDTH}
@@ -176,7 +186,7 @@ const EditorCanvas = () => {
               {images.map((img, index) => (
                 <KonvaImage
                   key={img.id}
-                  id={img-${index}}
+                  id={`img-${index}`}
                   image={img.image}
                   x={img.x}
                   y={img.y}
@@ -184,7 +194,7 @@ const EditorCanvas = () => {
                   height={img.height}
                   rotation={img.rotation}
                   opacity={img.opacity}
-                  draggable
+                  draggable={mode === "move"}
                   onClick={() => setSelectedImageIndex(index)}
                   onTap={() => setSelectedImageIndex(index)}
                 />
@@ -200,7 +210,7 @@ const EditorCanvas = () => {
                   globalCompositeOperation="source-over"
                 />
               ))}
-              {selectedImageIndex !== null && <Transformer ref={transformerRef} rotateEnabled={true} />}
+              {selectedImageIndex !== null && <Transformer ref={transformerRef} rotateEnabled={true} />}        
             </Layer>
           </Stage>
         </div>
@@ -208,3 +218,5 @@ const EditorCanvas = () => {
     </div>
   );
 };
+
+export default EditorCanvas;
