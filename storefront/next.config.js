@@ -14,6 +14,7 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   images: {
+    formats: ['image/avif', 'image/webp'],
     remotePatterns: [
       {
         protocol: "http",
@@ -52,7 +53,7 @@ const nextConfig = {
     if (isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,
-        canvas: false, // 🔧 отключаем canvas, чтобы не падал билд
+        canvas: false,
       };
     }
     return config;
