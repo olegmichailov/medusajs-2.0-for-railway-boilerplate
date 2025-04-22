@@ -5,13 +5,15 @@ import { useEffect, useRef, useState } from "react";
 import { Stage, Layer, Image as KonvaImage, Line, Transformer } from "react-konva";
 import useImage from "use-image";
 import { isMobile } from "react-device-detect";
+import { useRouter } from "next/navigation";
 
 const CANVAS_WIDTH = 985;
 const CANVAS_HEIGHT = 1271;
-const DISPLAY_HEIGHT = isMobile ? 680 : 750;
+const DISPLAY_HEIGHT = isMobile ? 670 : 750;
 const DISPLAY_WIDTH = (DISPLAY_HEIGHT * CANVAS_WIDTH) / CANVAS_HEIGHT;
 
 const EditorCanvas = () => {
+  const router = useRouter();
   const [images, setImages] = useState<any[]>([]);
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
   const [opacity, setOpacity] = useState(1);
@@ -123,7 +125,13 @@ const EditorCanvas = () => {
 
   return (
     <div className="w-screen h-screen bg-white overflow-hidden flex flex-col lg:flex-row">
-      <div className={`lg:w-1/2 p-4 ${isMobile ? "absolute z-50 top-0 w-full bg-white" : ""}`}>
+      {/* BACK BUTTON */}
+      {isMobile && (
+        <button className="absolute top-2 right-4 z-50 text-sm border px-3 py-1" onClick={() => router.push("/de/store")}>Назад</button>
+      )}
+
+      {/* MENU */}
+      <div className={`lg:w-1/2 p-4 ${isMobile ? "absolute z-40 top-0 w-full bg-white" : ""}`}>
         {isMobile && (
           <button className="text-sm mb-2 border px-3 py-1" onClick={() => setMenuOpen(!menuOpen)}>Create</button>
         )}
@@ -151,16 +159,17 @@ const EditorCanvas = () => {
               newImages[selectedImageIndex].opacity = Number(e.target.value);
               setImages(newImages);
             }
-          }} className="w-full mb-2 h-[2px] bg-black appearance-none cursor-pointer" />
+          }} className="w-full mb-2 h-[2px] bg-black appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2 [&::-webkit-slider-thumb]:h-2 [&::-webkit-slider-thumb]:bg-black [&::-webkit-slider-thumb]:rounded-none" />
 
           <label className="block text-xs mb-1">Brush Size: {brushSize}px</label>
-          <input type="range" min="1" max="30" value={brushSize} onChange={(e) => setBrushSize(Number(e.target.value))} className="w-full mb-2 h-[2px] bg-black appearance-none cursor-pointer" />
+          <input type="range" min="1" max="30" value={brushSize} onChange={(e) => setBrushSize(Number(e.target.value))} className="w-full mb-2 h-[2px] bg-black appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2 [&::-webkit-slider-thumb]:h-2 [&::-webkit-slider-thumb]:bg-black [&::-webkit-slider-thumb]:rounded-none" />
 
           <label className="block text-xs mb-1">Brush Color</label>
           <input type="color" value={brushColor} onChange={(e) => setBrushColor(e.target.value)} className="w-8 h-8 border p-0 cursor-pointer" />
         </div>
       </div>
 
+      {/* CANVAS */}
       <div className="lg:w-1/2 h-full flex items-center justify-center">
         <div style={{ width: DISPLAY_WIDTH, height: DISPLAY_HEIGHT }}>
           <Stage
@@ -190,7 +199,7 @@ const EditorCanvas = () => {
                   height={img.height}
                   rotation={img.rotation}
                   opacity={img.opacity}
-                  draggable
+                  draggable={!isMobile}
                   onClick={() => setSelectedImageIndex(index)}
                   onTap={() => setSelectedImageIndex(index)}
                 />
@@ -206,7 +215,9 @@ const EditorCanvas = () => {
                   globalCompositeOperation="source-over"
                 />
               ))}
-              {selectedImageIndex !== null && <Transformer ref={transformerRef} rotateEnabled={true} />}
+              {!isMobile && selectedImageIndex !== null && (
+                <Transformer ref={transformerRef} rotateEnabled={true} />
+              )}
             </Layer>
           </Stage>
         </div>
