@@ -28,6 +28,8 @@ const EditorCanvas = () => {
   const transformerRef = useRef<any>(null);
   const stageRef = useRef<any>(null);
 
+  const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -94,16 +96,13 @@ const EditorCanvas = () => {
   });
 
   const handleMouseDown = (e: any) => {
-    if (e.target === e.target.getStage()) {
-      setSelectedImageIndex(null);
-    }
-
+    if (e.target === e.target.getStage()) setSelectedImageIndex(null);
     if (mode !== "brush") return;
     const pos = stageRef.current.getPointerPosition();
     if (!pos) return;
     const scaled = scalePos(pos);
     setIsDrawing(true);
-    setDrawings([...drawings, { tool: "pen", color: brushColor, size: brushSize, points: [scaled.x, scaled.y] }]);
+    setDrawings([...drawings, { color: brushColor, size: brushSize, points: [scaled.x, scaled.y] }]);
   };
 
   const handleMouseMove = () => {
@@ -121,13 +120,14 @@ const EditorCanvas = () => {
 
   return (
     <div className="w-screen h-screen flex flex-col lg:flex-row bg-white">
-      <div className="w-full lg:w-1/2 p-6 lg:p-10">
-        <div className="mb-4">
+      {/* Controls */}
+      <div className="lg:w-1/2 w-full p-6 lg:p-10 space-y-4">
+        <div>
           <label className="block text-lg font-semibold mb-2">Upload Print</label>
           <input type="file" accept="image/*" onChange={handleFileChange} />
         </div>
 
-        <div className="mb-4">
+        <div>
           <label className="block text-sm font-medium">Opacity: {Math.round(opacity * 100)}%</label>
           <input
             type="range"
@@ -147,27 +147,24 @@ const EditorCanvas = () => {
           />
         </div>
 
-        <div className="flex flex-wrap gap-2 mb-4">
+        <div className="flex flex-wrap gap-2">
           <button className="border px-4 py-1 text-sm" onClick={() => setMockupType("front")}>Front</button>
           <button className="border px-4 py-1 text-sm" onClick={() => setMockupType("back")}>Back</button>
           <button className="border px-4 py-1 text-sm" onClick={() => setDrawings([])}>Clear Drawing</button>
           <button className="border px-4 py-1 text-sm" onClick={() => setMode("move")}>Move</button>
           <button className="border px-4 py-1 text-sm" onClick={() => setMode("brush")}>Brush</button>
-          <button
-            className="bg-black text-white px-4 py-1 text-sm"
-            onClick={() => {
-              const uri = stageRef.current.toDataURL({ pixelRatio: 2 });
-              const a = document.createElement("a");
-              a.href = uri;
-              a.download = "composition.png";
-              a.click();
-            }}
-          >
+          <button className="bg-black text-white px-4 py-1 text-sm" onClick={() => {
+            const uri = stageRef.current.toDataURL({ pixelRatio: 2 });
+            const a = document.createElement("a");
+            a.href = uri;
+            a.download = "composition.png";
+            a.click();
+          }}>
             Download
           </button>
         </div>
 
-        <div className="mb-4">
+        <div>
           <label className="block text-sm font-medium mb-1">Brush Color</label>
           <input
             type="color"
@@ -177,7 +174,7 @@ const EditorCanvas = () => {
           />
         </div>
 
-        <div className="mb-4">
+        <div>
           <label className="block text-sm font-medium">Brush Size</label>
           <input
             type="range"
@@ -190,7 +187,8 @@ const EditorCanvas = () => {
         </div>
       </div>
 
-      <div className="w-full lg:w-1/2 h-full flex items-center justify-center">
+      {/* Canvas */}
+      <div className="lg:w-1/2 w-full flex items-center justify-center h-full">
         <div style={{ width: DISPLAY_WIDTH, height: DISPLAY_HEIGHT }}>
           <Stage
             width={DISPLAY_WIDTH}
@@ -216,7 +214,7 @@ const EditorCanvas = () => {
                   height={img.height}
                   rotation={img.rotation}
                   opacity={img.opacity}
-                  draggable={mode === "move"}
+                  draggable
                   onClick={() => setSelectedImageIndex(index)}
                   onTap={() => setSelectedImageIndex(index)}
                 />
@@ -232,7 +230,7 @@ const EditorCanvas = () => {
                   globalCompositeOperation="source-over"
                 />
               ))}
-              {selectedImageIndex !== null && <Transformer ref={transformerRef} rotateEnabled={true} />}
+              {!isMobile && selectedImageIndex !== null && <Transformer ref={transformerRef} rotateEnabled={true} />}
             </Layer>
           </Stage>
         </div>
