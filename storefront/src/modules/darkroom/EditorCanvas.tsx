@@ -96,10 +96,15 @@ const EditorCanvas = () => {
     y: (pos.y * CANVAS_HEIGHT) / DISPLAY_HEIGHT,
   });
 
-  const handleMouseDown = (e: any) => {
+  const handleStageClick = (e: any) => {
     if (e.target === e.target.getStage()) {
       setSelectedImageIndex(null);
+      if (isMobile) setMenuOpen(false);
     }
+  };
+
+  const handleMouseDown = (e: any) => {
+    handleStageClick(e);
     if (mode !== "brush") return;
     const pos = stageRef.current.getPointerPosition();
     if (!pos) return;
@@ -158,6 +163,7 @@ const EditorCanvas = () => {
           <input type="color" value={brushColor} onChange={(e) => setBrushColor(e.target.value)} className="w-8 h-8 border p-0 cursor-pointer" />
         </div>
       </div>
+
       <div className="lg:w-1/2 h-full flex items-center justify-center">
         <div style={{ width: DISPLAY_WIDTH, height: DISPLAY_HEIGHT }}>
           <Stage
