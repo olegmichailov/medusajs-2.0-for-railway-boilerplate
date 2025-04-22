@@ -4,14 +4,16 @@
 import { useEffect, useRef, useState } from "react";
 import { Stage, Layer, Image as KonvaImage, Line, Transformer } from "react-konva";
 import useImage from "use-image";
+import { useRouter } from "next/navigation";
 import { isMobile } from "react-device-detect";
 
 const CANVAS_WIDTH = 985;
 const CANVAS_HEIGHT = 1271;
-const DISPLAY_HEIGHT = 750;
+const DISPLAY_HEIGHT = isMobile ? 680 : 750;
 const DISPLAY_WIDTH = (DISPLAY_HEIGHT * CANVAS_WIDTH) / CANVAS_HEIGHT;
 
 const EditorCanvas = () => {
+  const router = useRouter();
   const [images, setImages] = useState<any[]>([]);
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
   const [opacity, setOpacity] = useState(1);
@@ -21,12 +23,9 @@ const EditorCanvas = () => {
   const [isDrawing, setIsDrawing] = useState(false);
   const [brushColor, setBrushColor] = useState("#d63384");
   const [brushSize, setBrushSize] = useState(4);
-  const [mode, setMode] = useState<"move" | "brush">("move");
+  const [mode, setMode] = useState<"move" | "brush">("brush");
   const [menuOpen, setMenuOpen] = useState(false);
-
-  const [mockupImage] = useImage(
-    mockupType === "front" ? "/mockups/MOCAP_FRONT.png" : "/mockups/MOCAP_BACK.png"
-  );
+  const [mockupImage] = useImage(mockupType === "front" ? "/mockups/MOCAP_FRONT.png" : "/mockups/MOCAP_BACK.png");
 
   const transformerRef = useRef<any>(null);
   const stageRef = useRef<any>(null);
@@ -48,9 +47,12 @@ const EditorCanvas = () => {
             rotation: 0,
             opacity: 1,
             id: Date.now().toString(),
+            scaleX: 1,
+            scaleY: 1,
           };
           setImages((prev) => [...prev, newImage]);
           setSelectedImageIndex(images.length);
+          setMode("move");
         };
       };
       reader.readAsDataURL(file);
@@ -58,32 +60,8 @@ const EditorCanvas = () => {
   };
 
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
-      const copy = (isMac && e.metaKey && e.key === "c") || (!isMac && e.ctrlKey && e.key === "c");
-      const paste = (isMac && e.metaKey && e.key === "v") || (!isMac && e.ctrlKey && e.key === "v");
-
-      if (copy && selectedImageIndex !== null) {
-        setCopiedImage({ ...images[selectedImageIndex] });
-      }
-      if (paste && copiedImage) {
-        const duplicated = {
-          ...copiedImage,
-          id: Date.now().toString(),
-          x: copiedImage.x + 20,
-          y: copiedImage.y + 20,
-        };
-        setImages((prev) => [...prev, duplicated]);
-        setSelectedImageIndex(images.length);
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [copiedImage, selectedImageIndex, images]);
-
-  useEffect(() => {
     if (transformerRef.current && selectedImageIndex !== null) {
-      const node = stageRef.current.findOne(#img-${selectedImageIndex});
+      const node = stageRef.current.findOne(`#img-${selectedImageIndex}`);
       if (node) {
         transformerRef.current.nodes([node]);
         transformerRef.current.getLayer().batchDraw();
@@ -105,7 +83,7 @@ const EditorCanvas = () => {
     if (!pos) return;
     const scaled = scalePos(pos);
     setIsDrawing(true);
-    setDrawings([...drawings, { tool: "pen", color: brushColor, size: brushSize, points: [scaled.x, scaled.y] }]);
+    setDrawings([...drawings, { color: brushColor, size: brushSize, points: [scaled.x, scaled.y] }]);
   };
 
   const handlePointerMove = () => {
@@ -113,24 +91,26 @@ const EditorCanvas = () => {
     const pos = stageRef.current.getPointerPosition();
     if (!pos) return;
     const scaled = scalePos(pos);
-    let lastLine = drawings[drawings.length - 1];
+    const lastLine = drawings[drawings.length - 1];
     lastLine.points = lastLine.points.concat([scaled.x, scaled.y]);
-    drawings.splice(drawings.length - 1, 1, lastLine);
-    setDrawings(drawings.concat());
+    setDrawings([...drawings.slice(0, -1), lastLine]);
   };
 
   const handlePointerUp = () => setIsDrawing(false);
 
   return (
     <div className="w-screen h-screen bg-white overflow-hidden flex flex-col lg:flex-row">
-      <div className={lg:w-1/2 p-4 ${isMobile ? "absolute z-50 top-0 w-full bg-white" : ""}}>
+      <div className={`lg:w-1/2 p-4 ${isMobile ? "absolute z-50 top-0 w-full bg-white" : ""}`}>
         {isMobile && (
-          <button className="text-sm mb-2 border px-3 py-1" onClick={() => setMenuOpen(!menuOpen)}>Create</button>
+          <div className="flex justify-between items-center mb-2">
+            <button onClick={() => router.back()} className="text-sm border px-3 py-1">Back</button>
+            <button className="text-sm border px-3 py-1" onClick={() => setMenuOpen(!menuOpen)}>Create</button>
+          </div>
         )}
-        <div className={${isMobile && !menuOpen ? "hidden" : "block"}}>
+        <div className={`${isMobile && !menuOpen ? "hidden" : "block"}`}>
           <div className="flex flex-wrap gap-2 mb-4 text-sm">
-            <button className={border px-3 py-1 ${mode === "move" ? "bg-black text-white" : ""}} onClick={() => setMode("move")}>Move</button>
-            <button className={border px-3 py-1 ${mode === "brush" ? "bg-black text-white" : ""}} onClick={() => setMode("brush")}>Brush</button>
+            <button className={`border px-3 py-1 ${mode === "move" ? "bg-black text-white" : ""}`} onClick={() => setMode("move")}>Move</button>
+            <button className={`border px-3 py-1 ${mode === "brush" ? "bg-black text-white" : ""}`} onClick={() => setMode("brush")}>Brush</button>
             <button className="border px-3 py-1" onClick={() => setMockupType("front")}>Front</button>
             <button className="border px-3 py-1" onClick={() => setMockupType("back")}>Back</button>
             <button className="border px-3 py-1" onClick={() => setDrawings([])}>Clear</button>
@@ -152,17 +132,14 @@ const EditorCanvas = () => {
               setImages(newImages);
             }
           }} className="w-full mb-2 h-[2px] bg-black appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2 [&::-webkit-slider-thumb]:h-2 [&::-webkit-slider-thumb]:bg-black [&::-webkit-slider-thumb]:rounded-none" />
-
           <label className="block text-xs mb-1">Brush Size: {brushSize}px</label>
           <input type="range" min="1" max="30" value={brushSize} onChange={(e) => setBrushSize(Number(e.target.value))} className="w-full mb-2 h-[2px] bg-black appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2 [&::-webkit-slider-thumb]:h-2 [&::-webkit-slider-thumb]:bg-black [&::-webkit-slider-thumb]:rounded-none" />
-
           <label className="block text-xs mb-1">Brush Color</label>
           <input type="color" value={brushColor} onChange={(e) => setBrushColor(e.target.value)} className="w-8 h-8 border p-0 cursor-pointer" />
         </div>
       </div>
-
       <div className="lg:w-1/2 h-full flex items-center justify-center">
-        <div style={{ width: DISPLAY_WIDTH, height: DISPLAY_HEIGHT }}>
+        <div style={{ width: DISPLAY_WIDTH, height: DISPLAY_HEIGHT, transform: "translateY(-30px) scale(0.95)" }}>
           <Stage
             width={DISPLAY_WIDTH}
             height={DISPLAY_HEIGHT}
@@ -176,21 +153,21 @@ const EditorCanvas = () => {
             onTouchEnd={handlePointerUp}
           >
             <Layer>
-              {mockupImage && (
-                <KonvaImage image={mockupImage} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} />
-              )}
+              {mockupImage && <KonvaImage image={mockupImage} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} />}
               {images.map((img, index) => (
                 <KonvaImage
                   key={img.id}
-                  id={img-${index}}
+                  id={`img-${index}`}
                   image={img.image}
                   x={img.x}
                   y={img.y}
                   width={img.width}
                   height={img.height}
                   rotation={img.rotation}
+                  scaleX={img.scaleX || 1}
+                  scaleY={img.scaleY || 1}
                   opacity={img.opacity}
-                  draggable
+                  draggable={mode === "move"}
                   onClick={() => setSelectedImageIndex(index)}
                   onTap={() => setSelectedImageIndex(index)}
                 />
@@ -206,7 +183,7 @@ const EditorCanvas = () => {
                   globalCompositeOperation="source-over"
                 />
               ))}
-              {selectedImageIndex !== null && <Transformer ref={transformerRef} rotateEnabled={true} />}
+              {!isMobile && selectedImageIndex !== null && <Transformer ref={transformerRef} rotateEnabled={true} />}
             </Layer>
           </Stage>
         </div>
