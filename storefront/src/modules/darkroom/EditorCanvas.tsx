@@ -8,7 +8,7 @@ import { isMobile } from "react-device-detect";
 
 const CANVAS_WIDTH = 985;
 const CANVAS_HEIGHT = 1271;
-const DISPLAY_HEIGHT = isMobile ? 680 : 750;
+const DISPLAY_HEIGHT = 750;
 const DISPLAY_WIDTH = (DISPLAY_HEIGHT * CANVAS_WIDTH) / CANVAS_HEIGHT;
 
 const EditorCanvas = () => {
@@ -21,7 +21,7 @@ const EditorCanvas = () => {
   const [isDrawing, setIsDrawing] = useState(false);
   const [brushColor, setBrushColor] = useState("#d63384");
   const [brushSize, setBrushSize] = useState(4);
-  const [mode, setMode] = useState<"move" | "brush">("brush");
+  const [mode, setMode] = useState<"move" | "brush">("move");
   const [menuOpen, setMenuOpen] = useState(false);
 
   const [mockupImage] = useImage(
@@ -96,10 +96,9 @@ const EditorCanvas = () => {
     y: (pos.y * CANVAS_HEIGHT) / DISPLAY_HEIGHT,
   });
 
-  const handleMouseDown = (e: any) => {
+  const handlePointerDown = (e: any) => {
     if (e.target === e.target.getStage()) {
       setSelectedImageIndex(null);
-      if (isMobile) setMenuOpen(false);
     }
     if (mode !== "brush") return;
     const pos = stageRef.current.getPointerPosition();
@@ -109,7 +108,7 @@ const EditorCanvas = () => {
     setDrawings([...drawings, { tool: "pen", color: brushColor, size: brushSize, points: [scaled.x, scaled.y] }]);
   };
 
-  const handleMouseMove = () => {
+  const handlePointerMove = () => {
     if (!isDrawing || mode !== "brush") return;
     const pos = stageRef.current.getPointerPosition();
     if (!pos) return;
@@ -120,20 +119,16 @@ const EditorCanvas = () => {
     setDrawings(drawings.concat());
   };
 
-  const handleMouseUp = () => setIsDrawing(false);
+  const handlePointerUp = () => setIsDrawing(false);
 
   return (
-    <div className="relative w-screen h-screen bg-white overflow-hidden">
-      <div className="absolute top-0 left-0 w-full z-50 bg-white border-b flex items-center justify-between px-4 py-2">
-        <a href="/" className="text-sm font-bold">GMORKL</a>
+    <div className="w-screen h-screen bg-white overflow-hidden flex flex-col lg:flex-row">
+      <div className={`lg:w-1/2 p-4 ${isMobile ? "absolute z-50 top-0 w-full bg-white" : ""}`}>
         {isMobile && (
-          <button className="text-sm border px-3 py-1" onClick={() => setMenuOpen(!menuOpen)}>Create</button>
+          <button className="text-sm mb-2 border px-3 py-1" onClick={() => setMenuOpen(!menuOpen)}>Create</button>
         )}
-      </div>
-
-      {(!isMobile || menuOpen) && (
-        <div className="absolute top-12 left-0 w-full z-40 bg-white px-4 pb-4 flex flex-col gap-2 text-sm">
-          <div className="flex flex-wrap gap-2">
+        <div className={`${isMobile && !menuOpen ? "hidden" : "block"}`}>
+          <div className="flex flex-wrap gap-2 mb-4 text-sm">
             <button className={`border px-3 py-1 ${mode === "move" ? "bg-black text-white" : ""}`} onClick={() => setMode("move")}>Move</button>
             <button className={`border px-3 py-1 ${mode === "brush" ? "bg-black text-white" : ""}`} onClick={() => setMode("brush")}>Brush</button>
             <button className="border px-3 py-1" onClick={() => setMockupType("front")}>Front</button>
@@ -147,10 +142,8 @@ const EditorCanvas = () => {
               a.click();
             }}>Download</button>
           </div>
-
-          <input type="file" accept="image/*" onChange={handleFileChange} />
-
-          <label className="text-xs mt-1">Opacity</label>
+          <input type="file" accept="image/*" onChange={handleFileChange} className="mb-3" />
+          <label className="block text-xs mb-1">Opacity: {Math.round(opacity * 100)}%</label>
           <input type="range" min="0" max="1" step="0.01" value={opacity} onChange={(e) => {
             setOpacity(Number(e.target.value));
             if (selectedImageIndex !== null) {
@@ -158,26 +151,29 @@ const EditorCanvas = () => {
               newImages[selectedImageIndex].opacity = Number(e.target.value);
               setImages(newImages);
             }
-          }} />
+          }} className="w-full mb-2 h-[2px] bg-black appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2 [&::-webkit-slider-thumb]:h-2 [&::-webkit-slider-thumb]:bg-black [&::-webkit-slider-thumb]:rounded-none" />
 
-          <label className="text-xs mt-1">Brush Size</label>
-          <input type="range" min="1" max="30" value={brushSize} onChange={(e) => setBrushSize(Number(e.target.value))} />
+          <label className="block text-xs mb-1">Brush Size: {brushSize}px</label>
+          <input type="range" min="1" max="30" value={brushSize} onChange={(e) => setBrushSize(Number(e.target.value))} className="w-full mb-2 h-[2px] bg-black appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2 [&::-webkit-slider-thumb]:h-2 [&::-webkit-slider-thumb]:bg-black [&::-webkit-slider-thumb]:rounded-none" />
 
-          <label className="text-xs mt-1">Brush Color</label>
-          <input type="color" value={brushColor} onChange={(e) => setBrushColor(e.target.value)} className="w-8 h-8" />
+          <label className="block text-xs mb-1">Brush Color</label>
+          <input type="color" value={brushColor} onChange={(e) => setBrushColor(e.target.value)} className="w-8 h-8 border p-0 cursor-pointer" />
         </div>
-      )}
+      </div>
 
-      <div className="w-full h-full flex items-center justify-center">
+      <div className="lg:w-1/2 h-full flex items-center justify-center">
         <div style={{ width: DISPLAY_WIDTH, height: DISPLAY_HEIGHT }}>
           <Stage
             width={DISPLAY_WIDTH}
             height={DISPLAY_HEIGHT}
             scale={{ x: DISPLAY_WIDTH / CANVAS_WIDTH, y: DISPLAY_HEIGHT / CANVAS_HEIGHT }}
             ref={stageRef}
-            onMouseDown={handleMouseDown}
-            onMousemove={handleMouseMove}
-            onMouseup={handleMouseUp}
+            onMouseDown={handlePointerDown}
+            onMousemove={handlePointerMove}
+            onMouseup={handlePointerUp}
+            onTouchStart={handlePointerDown}
+            onTouchMove={handlePointerMove}
+            onTouchEnd={handlePointerUp}
           >
             <Layer>
               {mockupImage && (
@@ -194,7 +190,7 @@ const EditorCanvas = () => {
                   height={img.height}
                   rotation={img.rotation}
                   opacity={img.opacity}
-                  draggable={mode === "move"}
+                  draggable
                   onClick={() => setSelectedImageIndex(index)}
                   onTap={() => setSelectedImageIndex(index)}
                 />
@@ -210,7 +206,7 @@ const EditorCanvas = () => {
                   globalCompositeOperation="source-over"
                 />
               ))}
-              {selectedImageIndex !== null && <Transformer ref={transformerRef} rotateEnabled={true} />}        
+              {selectedImageIndex !== null && <Transformer ref={transformerRef} rotateEnabled={true} />}
             </Layer>
           </Stage>
         </div>
