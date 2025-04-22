@@ -90,7 +90,7 @@ export default function PaginatedProducts({
 
   return (
     <>
-      <div className="px-4 sm:px-6 pt-4 pb-2 flex items-center justify-between">
+      <div className="px-6 sm:px-6 pt-4 pb-2 flex items-center justify-between">
         <div className="text-sm sm:text-base font-medium tracking-wide uppercase">
           {/* Динамический заголовок будет здесь от другого компонента */}
         </div>
@@ -112,7 +112,7 @@ export default function PaginatedProducts({
       </div>
 
       <ul
-        className={`grid ${gridColsClass} gap-x-4 gap-y-10 px-4 sm:px-0`}
+        className={`grid ${gridColsClass} gap-x-6 gap-y-10 px-6 sm:px-6`}
         data-testid="products-list"
       >
         {products.map((p) => (
