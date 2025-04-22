@@ -5,7 +5,6 @@ import { Stage, Layer, Image as KonvaImage, Line, Transformer } from "react-konv
 import useImage from "use-image";
 import { useRouter } from "next/navigation";
 import { isMobile } from "react-device-detect";
-import { useGesture } from "@use-gesture/react";
 
 const CANVAS_WIDTH = 985;
 const CANVAS_HEIGHT = 1271;
@@ -21,12 +20,11 @@ const EditorCanvas = () => {
   const [copiedImage, setCopiedImage] = useState<any | null>(null);
   const [drawings, setDrawings] = useState<any[]>([]);
   const [isDrawing, setIsDrawing] = useState(false);
-  const [brushColor, setBrushColor] = useState("#d63384");
+  const [brushColor, setBrushColor] = useState("#000000");
   const [brushSize, setBrushSize] = useState(4);
   const [mode, setMode] = useState<"move" | "brush">("brush");
   const [menuOpen, setMenuOpen] = useState(false);
   const [mockupImage] = useImage(mockupType === "front" ? "/mockups/MOCAP_FRONT.png" : "/mockups/MOCAP_BACK.png");
-
   const transformerRef = useRef<any>(null);
   const stageRef = useRef<any>(null);
 
@@ -47,6 +45,8 @@ const EditorCanvas = () => {
             rotation: 0,
             opacity: 1,
             id: Date.now().toString(),
+            scaleX: 1,
+            scaleY: 1,
           };
           setImages((prev) => [...prev, newImage]);
           setSelectedImageIndex(images.length);
@@ -57,47 +57,42 @@ const EditorCanvas = () => {
     }
   };
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
-      const copy = (isMac && e.metaKey && e.key === "c") || (!isMac && e.ctrlKey && e.key === "c");
-      const paste = (isMac && e.metaKey && e.key === "v") || (!isMac && e.ctrlKey && e.key === "v");
+  const handleTouchTransform = (e: any) => {
+    if (selectedImageIndex === null) return;
+    const imageNode = stageRef.current.findOne(`#img-${selectedImageIndex}`);
+    if (!imageNode) return;
 
-      if (copy && selectedImageIndex !== null) {
-        setCopiedImage({ ...images[selectedImageIndex] });
-      }
-      if (paste && copiedImage) {
-        const duplicated = {
-          ...copiedImage,
-          id: Date.now().toString(),
-          x: copiedImage.x + 20,
-          y: copiedImage.y + 20,
-        };
-        setImages((prev) => [...prev, duplicated]);
-        setSelectedImageIndex(images.length);
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [copiedImage, selectedImageIndex, images]);
+    const touches = e.evt.touches;
+    if (touches.length === 2) {
+      const dx = touches[1].clientX - touches[0].clientX;
+      const dy = touches[1].clientY - touches[0].clientY;
+      const centerX = (touches[1].clientX + touches[0].clientX) / 2;
+      const centerY = (touches[1].clientY + touches[0].clientY) / 2;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
 
-  useEffect(() => {
-    if (transformerRef.current && selectedImageIndex !== null && !isMobile) {
-      const node = stageRef.current.findOne(`#img-${selectedImageIndex}`);
-      if (node) {
-        transformerRef.current.nodes([node]);
-        transformerRef.current.getLayer().batchDraw();
+      if (!imageNode.startDistance) {
+        imageNode.startDistance = distance;
+        imageNode.startRotation = imageNode.rotation();
+        imageNode.startScaleX = imageNode.scaleX();
+        imageNode.startScaleY = imageNode.scaleY();
+        return;
       }
+
+      const scaleFactor = distance / imageNode.startDistance;
+      imageNode.scaleX(imageNode.startScaleX * scaleFactor);
+      imageNode.scaleY(imageNode.startScaleY * scaleFactor);
+      imageNode.rotation(imageNode.startRotation + angle);
+      imageNode.x(centerX - (imageNode.width() * imageNode.scaleX()) / 2);
+      imageNode.y(centerY - (imageNode.height() * imageNode.scaleY()) / 2);
+      stageRef.current.batchDraw();
     }
-  }, [selectedImageIndex]);
-
-  const scalePos = (pos: { x: number; y: number }) => ({
-    x: (pos.x * CANVAS_WIDTH) / DISPLAY_WIDTH,
-    y: (pos.y * CANVAS_HEIGHT) / DISPLAY_HEIGHT,
-  });
+  };
 
   const handlePointerDown = (e: any) => {
-    if (e.target === e.target.getStage()) setSelectedImageIndex(null);
+    if (e.target === e.target.getStage()) {
+      setSelectedImageIndex(null);
+    }
     if (mode !== "brush") return;
     const pos = stageRef.current.getPointerPosition();
     if (!pos) return;
@@ -118,12 +113,27 @@ const EditorCanvas = () => {
 
   const handlePointerUp = () => setIsDrawing(false);
 
+  const scalePos = (pos: { x: number; y: number }) => ({
+    x: (pos.x * CANVAS_WIDTH) / DISPLAY_WIDTH,
+    y: (pos.y * CANVAS_HEIGHT) / DISPLAY_HEIGHT,
+  });
+
+  useEffect(() => {
+    if (transformerRef.current && selectedImageIndex !== null) {
+      const node = stageRef.current.findOne(`#img-${selectedImageIndex}`);
+      if (node) {
+        transformerRef.current.nodes([node]);
+        transformerRef.current.getLayer().batchDraw();
+      }
+    }
+  }, [selectedImageIndex]);
+
   return (
     <div className="w-screen h-screen bg-white overflow-hidden flex flex-col lg:flex-row">
       <div className={`lg:w-1/2 p-4 ${isMobile ? "absolute z-50 top-0 w-full bg-white" : ""}`}>
         {isMobile && (
           <div className="flex justify-between items-center mb-2">
-            <button onClick={() => router.back()} className="text-sm text-gray-600 underline">Back</button>
+            <button onClick={() => router.back()} className="text-sm border px-3 py-1">Back</button>
             <button className="text-sm border px-3 py-1" onClick={() => setMenuOpen(!menuOpen)}>Create</button>
           </div>
         )}
@@ -168,8 +178,8 @@ const EditorCanvas = () => {
             onMouseDown={handlePointerDown}
             onMousemove={handlePointerMove}
             onMouseup={handlePointerUp}
-            onTouchStart={handlePointerDown}
-            onTouchMove={handlePointerMove}
+            onTouchStart={(e) => { handlePointerDown(e); handleTouchTransform(e); }}
+            onTouchMove={(e) => { handlePointerMove(e); handleTouchTransform(e); }}
             onTouchEnd={handlePointerUp}
           >
             <Layer>
@@ -184,8 +194,10 @@ const EditorCanvas = () => {
                   width={img.width}
                   height={img.height}
                   rotation={img.rotation}
+                  scaleX={img.scaleX || 1}
+                  scaleY={img.scaleY || 1}
                   opacity={img.opacity}
-                  draggable
+                  draggable={mode === "move"}
                   onClick={() => setSelectedImageIndex(index)}
                   onTap={() => setSelectedImageIndex(index)}
                 />
