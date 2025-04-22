@@ -83,7 +83,7 @@ const EditorCanvas = () => {
 
   useEffect(() => {
     if (transformerRef.current && selectedImageIndex !== null) {
-      const node = stageRef.current.findOne(`#img-${selectedImageIndex}`);
+      const node = stageRef.current.findOne(#img-${selectedImageIndex});
       if (node) {
         transformerRef.current.nodes([node]);
         transformerRef.current.getLayer().batchDraw();
@@ -96,15 +96,10 @@ const EditorCanvas = () => {
     y: (pos.y * CANVAS_HEIGHT) / DISPLAY_HEIGHT,
   });
 
-  const handleStageClick = (e: any) => {
+  const handleMouseDown = (e: any) => {
     if (e.target === e.target.getStage()) {
       setSelectedImageIndex(null);
-      if (isMobile) setMenuOpen(false);
     }
-  };
-
-  const handleMouseDown = (e: any) => {
-    handleStageClick(e);
     if (mode !== "brush") return;
     const pos = stageRef.current.getPointerPosition();
     if (!pos) return;
@@ -128,17 +123,17 @@ const EditorCanvas = () => {
 
   return (
     <div className="w-screen h-screen bg-white overflow-hidden flex flex-col lg:flex-row">
-      <div className={`lg:w-1/2 p-4 ${isMobile ? "absolute z-50 top-0 w-full bg-white" : ""}`}>
+      <div className={lg:w-1/2 p-4 ${isMobile ? "absolute z-50 top-0 w-full bg-white" : ""}}>
         {isMobile && (
           <button className="text-sm mb-2 border px-3 py-1" onClick={() => setMenuOpen(!menuOpen)}>Create</button>
         )}
-        <div className={`${isMobile && !menuOpen ? "hidden" : "block"}`}>
+        <div className={${isMobile && !menuOpen ? "hidden" : "block"}}>
           <div className="flex flex-wrap gap-2 mb-4 text-sm">
             <button className="border px-3 py-1" onClick={() => setMockupType("front")}>Front</button>
             <button className="border px-3 py-1" onClick={() => setMockupType("back")}>Back</button>
             <button className="border px-3 py-1" onClick={() => setDrawings([])}>Clear</button>
-            <button className={`border px-3 py-1 ${mode === "move" ? "bg-black text-white" : ""}`} onClick={() => setMode("move")}>Move</button>
-            <button className={`border px-3 py-1 ${mode === "brush" ? "bg-black text-white" : ""}`} onClick={() => setMode("brush")}>Brush</button>
+            <button className={border px-3 py-1 ${mode === "move" ? "bg-black text-white" : ""}} onClick={() => setMode("move")}>Move</button>
+            <button className={border px-3 py-1 ${mode === "brush" ? "bg-black text-white" : ""}} onClick={() => setMode("brush")}>Brush</button>
             <button className="bg-black text-white px-3 py-1" onClick={() => {
               const uri = stageRef.current.toDataURL({ pixelRatio: 2 });
               const a = document.createElement("a");
@@ -163,7 +158,6 @@ const EditorCanvas = () => {
           <input type="color" value={brushColor} onChange={(e) => setBrushColor(e.target.value)} className="w-8 h-8 border p-0 cursor-pointer" />
         </div>
       </div>
-
       <div className="lg:w-1/2 h-full flex items-center justify-center">
         <div style={{ width: DISPLAY_WIDTH, height: DISPLAY_HEIGHT }}>
           <Stage
@@ -182,7 +176,7 @@ const EditorCanvas = () => {
               {images.map((img, index) => (
                 <KonvaImage
                   key={img.id}
-                  id={`img-${index}`}
+                  id={img-${index}}
                   image={img.image}
                   x={img.x}
                   y={img.y}
@@ -214,5 +208,3 @@ const EditorCanvas = () => {
     </div>
   );
 };
-
-export default EditorCanvas;
