@@ -4,11 +4,12 @@
 import { useEffect, useRef, useState } from "react";
 import { Stage, Layer, Image as KonvaImage, Transformer } from "react-konva";
 import useImage from "use-image";
+import { toPng } from "html-to-image";
 
 const CANVAS_WIDTH = 985;
 const CANVAS_HEIGHT = 1271;
-const DISPLAY_WIDTH = 500;
-const DISPLAY_HEIGHT = 645; // сохранение пропорции 985:1271
+const DISPLAY_HEIGHT = 750;
+const DISPLAY_WIDTH = (DISPLAY_HEIGHT / CANVAS_HEIGHT) * CANVAS_WIDTH;
 
 const EditorCanvas = () => {
   const [images, setImages] = useState<any[]>([]);
@@ -84,20 +85,23 @@ const EditorCanvas = () => {
   }, [selectedImageIndex]);
 
   const handleDeselect = (e: any) => {
-    const clickedOnEmpty = e.target === e.target.getStage();
-    if (clickedOnEmpty) setSelectedImageIndex(null);
+    if (e.target === e.target.getStage()) {
+      setSelectedImageIndex(null);
+    }
   };
 
-  const downloadPNG = () => {
-    const uri = stageRef.current.toDataURL({ pixelRatio: 2 });
+  const handleDownload = () => {
+    const uri = stageRef.current.toDataURL({ pixelRatio: 3 });
     const link = document.createElement("a");
-    link.download = "composition.png";
+    link.download = "gmorkl-print.png";
     link.href = uri;
+    document.body.appendChild(link);
     link.click();
+    document.body.removeChild(link);
   };
 
   return (
-    <div className="w-screen h-screen flex bg-white">
+    <div className="w-screen h-screen flex bg-white overflow-hidden">
       <div className="w-1/2 p-10">
         <div className="mb-4">
           <label className="block text-lg font-semibold mb-2">Upload Print</label>
@@ -120,7 +124,7 @@ const EditorCanvas = () => {
                 setImages(newImages);
               }
             }}
-            className="w-full h-[1px] bg-black appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-[6px] [&::-webkit-slider-thumb]:h-[6px] [&::-webkit-slider-thumb]:bg-black [&::-webkit-slider-thumb]:rounded-none"
+            className="w-[250px] h-[2px] bg-black appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-[10px] [&::-webkit-slider-thumb]:h-[10px] [&::-webkit-slider-thumb]:bg-black [&::-webkit-slider-thumb]:rounded-none"
           />
         </div>
         <div className="flex gap-2">
@@ -128,7 +132,7 @@ const EditorCanvas = () => {
           <button className="border px-4 py-2" onClick={() => setMockupType("back")}>Back</button>
           <button
             className="bg-black text-white px-4 py-2"
-            onClick={downloadPNG}
+            onClick={handleDownload}
           >
             Download
           </button>
@@ -167,7 +171,9 @@ const EditorCanvas = () => {
                   onTap={() => setSelectedImageIndex(index)}
                 />
               ))}
-              {selectedImageIndex !== null && <Transformer ref={transformerRef} rotateEnabled={true} />}
+              {selectedImageIndex !== null && (
+                <Transformer ref={transformerRef} rotateEnabled={true} />
+              )}
             </Layer>
           </Stage>
         </div>
