@@ -1,28 +1,26 @@
-// src/modules/darkroom/EditorCanvas.tsx
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { Stage, Layer, Image as KonvaImage, Transformer } from "react-konva";
 import useImage from "use-image";
 
 const CANVAS_WIDTH = 985;
 const CANVAS_HEIGHT = 1271;
-const DISPLAY_WIDTH = 500;
-const DISPLAY_HEIGHT = 645; // сохранение пропорции 985:1271
 
-const EditorCanvas = () => {
+export default function EditorCanvas() {
   const [images, setImages] = useState<any[]>([]);
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
-  const [opacity, setOpacity] = useState(1);
   const [mockupType, setMockupType] = useState<"front" | "back">("front");
-  const [copiedImage, setCopiedImage] = useState<any | null>(null);
-
   const [mockupImage] = useImage(
-    mockupType === "front" ? "/mockups/MOCAP_FRONT.png" : "/mockups/MOCAP_BACK.png"
+    mockupType === "front"
+      ? "/mockups/MOCAP_FRONT.png"
+      : "/mockups/MOCAP_BACK.png"
   );
 
   const transformerRef = useRef<any>(null);
   const stageRef = useRef<any>(null);
+
+  const [opacity, setOpacity] = useState(1);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -35,7 +33,7 @@ const EditorCanvas = () => {
           const newImage = {
             image: img,
             x: 100,
-            y: 150,
+            y: 100,
             width: img.width / 4,
             height: img.height / 4,
             rotation: 0,
@@ -52,97 +50,102 @@ const EditorCanvas = () => {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
-      const copy = (isMac && e.metaKey && e.key === "c") || (!isMac && e.ctrlKey && e.key === "c");
-      const paste = (isMac && e.metaKey && e.key === "v") || (!isMac && e.ctrlKey && e.key === "v");
+      const isMac = /(Mac|iPhone|iPod|iPad)/i.test(navigator.platform);
+      const copyKey = isMac ? e.metaKey : e.ctrlKey;
 
-      if (copy && selectedImageIndex !== null) {
-        setCopiedImage({ ...images[selectedImageIndex] });
+      if (copyKey && e.key === "c" && selectedImageIndex !== null) {
+        const copied = { ...images[selectedImageIndex] };
+        localStorage.setItem("clipboardImage", JSON.stringify(copied));
       }
-      if (paste && copiedImage) {
-        const duplicated = {
-          ...copiedImage,
-          id: Date.now().toString(),
-          x: copiedImage.x + 20,
-          y: copiedImage.y + 20,
-        };
-        setImages((prev) => [...prev, duplicated]);
-        setSelectedImageIndex(images.length);
+      if (copyKey && e.key === "v") {
+        const clipboard = localStorage.getItem("clipboardImage");
+        if (clipboard) {
+          const parsed = JSON.parse(clipboard);
+          const newImage = {
+            ...parsed,
+            x: parsed.x + 20,
+            y: parsed.y + 20,
+            id: Date.now().toString(),
+          };
+          setImages((prev) => [...prev, newImage]);
+          setSelectedImageIndex(images.length);
+        }
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [copiedImage, selectedImageIndex, images]);
+  }, [images, selectedImageIndex]);
 
   useEffect(() => {
     if (transformerRef.current && selectedImageIndex !== null) {
-      transformerRef.current.nodes([
-        stageRef.current.findOne(`#img-${selectedImageIndex}`),
-      ]);
-      transformerRef.current.getLayer().batchDraw();
+      const shape = stageRef.current.findOne(`#img-${selectedImageIndex}`);
+      if (shape) {
+        transformerRef.current.nodes([shape]);
+        transformerRef.current.getLayer().batchDraw();
+      }
     }
-  }, [selectedImageIndex]);
+  }, [selectedImageIndex, images]);
 
-  const handleDeselect = (e: any) => {
-    const clickedOnEmpty = e.target === e.target.getStage();
-    if (clickedOnEmpty) setSelectedImageIndex(null);
+  const handleStageClick = (e: any) => {
+    if (e.target === e.target.getStage()) {
+      setSelectedImageIndex(null);
+    }
   };
 
   return (
-    <div className="w-screen h-screen flex bg-white">
+    <div className="w-full h-screen flex bg-white overflow-hidden">
       <div className="w-1/2 p-10">
         <div className="mb-4">
           <label className="block text-lg font-semibold mb-2">Upload Print</label>
           <input type="file" accept="image/*" onChange={handleFileChange} />
           <p className="text-sm text-gray-500 mt-2">Drag, scale, rotate print freely</p>
         </div>
+
         <div className="mb-4">
-          <label className="block text-sm font-medium">Opacity: {Math.round(opacity * 100)}%</label>
+          <label className="block text-sm font-medium">Opacity: {(opacity * 100).toFixed(0)}%</label>
           <input
             type="range"
             min="0"
             max="1"
             step="0.01"
             value={opacity}
+            className="w-full appearance-none h-[2px] bg-black"
             onChange={(e) => {
-              setOpacity(Number(e.target.value));
+              const newOpacity = Number(e.target.value);
+              setOpacity(newOpacity);
               if (selectedImageIndex !== null) {
                 const newImages = [...images];
-                newImages[selectedImageIndex].opacity = Number(e.target.value);
+                newImages[selectedImageIndex].opacity = newOpacity;
                 setImages(newImages);
               }
             }}
-            className="w-full h-[2px] bg-black appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-black [&::-webkit-slider-thumb]:rounded-none"
           />
         </div>
+
         <div className="flex gap-2">
           <button className="border px-4 py-2" onClick={() => setMockupType("front")}>Front</button>
           <button className="border px-4 py-2" onClick={() => setMockupType("back")}>Back</button>
           <button
             className="bg-black text-white px-4 py-2"
             onClick={() => console.log("Print", images)}
-          >
-            Print
-          </button>
+          >Print</button>
         </div>
       </div>
+
       <div className="w-1/2 h-full flex items-center justify-center">
-        <div className="border border-dashed border-gray-400" style={{ width: DISPLAY_WIDTH, height: DISPLAY_HEIGHT }}>
+        <div className="border border-dashed border-gray-400 max-h-full">
           <Stage
-            width={DISPLAY_WIDTH}
-            height={DISPLAY_HEIGHT}
-            scale={{ x: DISPLAY_WIDTH / CANVAS_WIDTH, y: DISPLAY_HEIGHT / CANVAS_HEIGHT }}
             ref={stageRef}
-            onMouseDown={handleDeselect}
+            width={CANVAS_WIDTH}
+            height={CANVAS_HEIGHT}
+            onMouseDown={handleStageClick}
           >
             <Layer>
-              {mockupImage && (
-                <KonvaImage
-                  image={mockupImage}
-                  width={CANVAS_WIDTH}
-                  height={CANVAS_HEIGHT}
-                />
-              )}
+              <KonvaImage
+                image={mockupImage}
+                width={CANVAS_WIDTH}
+                height={CANVAS_HEIGHT}
+              />
               {images.map((img, index) => (
                 <KonvaImage
                   key={img.id}
@@ -159,13 +162,22 @@ const EditorCanvas = () => {
                   onTap={() => setSelectedImageIndex(index)}
                 />
               ))}
-              {selectedImageIndex !== null && <Transformer ref={transformerRef} rotateEnabled={true} />}
+              {selectedImageIndex !== null && (
+                <Transformer
+                  ref={transformerRef}
+                  rotateEnabled={true}
+                  boundBoxFunc={(oldBox, newBox) => {
+                    if (newBox.width < 50 || newBox.height < 50) {
+                      return oldBox;
+                    }
+                    return newBox;
+                  }}
+                />
+              )}
             </Layer>
           </Stage>
         </div>
       </div>
     </div>
   );
-};
-
-export default EditorCanvas;
+}
