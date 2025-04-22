@@ -31,7 +31,7 @@ const Thumbnail: React.FC<ThumbnailProps> = ({
         "relative w-full overflow-hidden bg-ui-bg-subtle shadow-elevation-card-rest transition-shadow duration-300 group",
         className,
         {
-          "aspect-[3/4]": !isFeatured && size !== "square", // 👈 более точное соотношение для большинства изображений
+          "aspect-[3/4]": !isFeatured && size !== "square",
           "aspect-[11/14]": isFeatured,
           "aspect-[1/1]": size === "square",
         }
@@ -51,11 +51,12 @@ const ImageOrPlaceholder = ({
     <Image
       src={image}
       alt="Thumbnail"
-      className="absolute inset-0 object-cover object-center transition-transform duration-[700ms] ease-[cubic-bezier(0.25,0.1,0.25,1)] group-hover:scale-[1.02]"
+      className="absolute inset-0 object-cover object-center transition-transform duration-[1200ms] ease-[cubic-bezier(0.25,0.1,0.25,1)] group-hover:scale-[1.02]"
       draggable={false}
-      quality={70}
+      quality={90}
       sizes="(max-width: 576px) 100vw, (max-width: 768px) 50vw, 25vw"
       fill
+      priority={false}
     />
   ) : (
     <div className="w-full h-full absolute inset-0 flex items-center justify-center">
