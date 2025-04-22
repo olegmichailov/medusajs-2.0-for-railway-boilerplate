@@ -22,7 +22,7 @@ const EditorCanvas = () => {
   const [brushColor, setBrushColor] = useState("#d63384");
   const [brushSize, setBrushSize] = useState(4);
   const [mode, setMode] = useState<"move" | "brush">("brush");
-  const [menuOpen, setMenuOpen] = useState(true);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const [mockupImage] = useImage(
     mockupType === "front" ? "/mockups/MOCAP_FRONT.png" : "/mockups/MOCAP_BACK.png"
@@ -51,7 +51,7 @@ const EditorCanvas = () => {
           };
           setImages((prev) => [...prev, newImage]);
           setSelectedImageIndex(images.length);
-          setMode("move"); // Автоматически в Move
+          setMode("move");
         };
       };
       reader.readAsDataURL(file);
@@ -83,7 +83,7 @@ const EditorCanvas = () => {
   }, [copiedImage, selectedImageIndex, images]);
 
   useEffect(() => {
-    if (transformerRef.current && selectedImageIndex !== null) {
+    if (!isMobile && transformerRef.current && selectedImageIndex !== null) {
       const node = stageRef.current.findOne(`#img-${selectedImageIndex}`);
       if (node) {
         transformerRef.current.nodes([node]);
@@ -126,10 +126,7 @@ const EditorCanvas = () => {
     <div className="w-screen h-screen bg-white overflow-hidden flex flex-col lg:flex-row">
       <div className={`lg:w-1/2 p-4 ${isMobile ? "absolute z-50 top-0 w-full bg-white" : ""}`}>
         {isMobile && (
-          <div className="flex justify-between mb-2">
-            <button className="text-sm border px-3 py-1" onClick={() => setMenuOpen(!menuOpen)}>Create</button>
-            <button className="text-sm border px-3 py-1" onClick={() => window.history.back()}>Back</button>
-          </div>
+          <button className="text-sm mb-2 border px-3 py-1" onClick={() => setMenuOpen(!menuOpen)}>Create</button>
         )}
         <div className={`${isMobile && !menuOpen ? "hidden" : "block"}`}>
           <div className="flex flex-wrap gap-2 mb-4 text-sm">
@@ -166,7 +163,7 @@ const EditorCanvas = () => {
       </div>
 
       <div className="lg:w-1/2 h-full flex items-center justify-center">
-        <div style={{ width: DISPLAY_WIDTH, height: DISPLAY_HEIGHT, marginTop: isMobile ? 30 : 0 }}>
+        <div style={{ width: DISPLAY_WIDTH, height: DISPLAY_HEIGHT, marginTop: isMobile ? -30 : 0 }}>
           <Stage
             width={DISPLAY_WIDTH}
             height={DISPLAY_HEIGHT}
@@ -210,7 +207,9 @@ const EditorCanvas = () => {
                   globalCompositeOperation="source-over"
                 />
               ))}
-              {selectedImageIndex !== null && <Transformer ref={transformerRef} rotateEnabled={true} />}
+              {!isMobile && selectedImageIndex !== null && (
+                <Transformer ref={transformerRef} rotateEnabled={true} />
+              )}
             </Layer>
           </Stage>
         </div>
