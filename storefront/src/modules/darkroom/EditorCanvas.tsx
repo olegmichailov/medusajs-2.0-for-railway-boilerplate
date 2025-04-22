@@ -1,4 +1,3 @@
-// src/modules/darkroom/EditorCanvas.tsx
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -7,8 +6,8 @@ import useImage from "use-image";
 
 const CANVAS_WIDTH = 985;
 const CANVAS_HEIGHT = 1271;
-const DISPLAY_WIDTH = 500;
-const DISPLAY_HEIGHT = 645; // сохранение пропорции 985:1271
+const DISPLAY_HEIGHT = 750;
+const DISPLAY_WIDTH = (DISPLAY_HEIGHT / CANVAS_HEIGHT) * CANVAS_WIDTH;
 
 const EditorCanvas = () => {
   const [images, setImages] = useState<any[]>([]);
@@ -89,8 +88,8 @@ const EditorCanvas = () => {
   };
 
   return (
-    <div className="w-screen h-screen flex bg-white">
-      <div className="w-1/2 p-10">
+    <div className="w-screen h-screen flex bg-white overflow-hidden">
+      <div className="w-1/2 p-10 overflow-auto">
         <div className="mb-4">
           <label className="block text-lg font-semibold mb-2">Upload Print</label>
           <input type="file" accept="image/*" onChange={handleFileChange} />
@@ -126,6 +125,7 @@ const EditorCanvas = () => {
           </button>
         </div>
       </div>
+
       <div className="w-1/2 h-full flex items-center justify-center">
         <div className="border border-dashed border-gray-400" style={{ width: DISPLAY_WIDTH, height: DISPLAY_HEIGHT }}>
           <Stage
