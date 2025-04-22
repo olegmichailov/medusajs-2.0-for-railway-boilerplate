@@ -1,4 +1,3 @@
-// src/modules/darkroom/EditorCanvas.tsx
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -25,7 +24,9 @@ const EditorCanvas = () => {
   const [brushSize, setBrushSize] = useState(4);
   const [mode, setMode] = useState<"move" | "brush">("brush");
   const [menuOpen, setMenuOpen] = useState(false);
-  const [mockupImage] = useImage(mockupType === "front" ? "/mockups/MOCAP_FRONT.png" : "/mockups/MOCAP_BACK.png");
+  const [mockupImage] = useImage(
+    mockupType === "front" ? "/mockups/MOCAP_FRONT.png" : "/mockups/MOCAP_BACK.png"
+  );
   const transformerRef = useRef<any>(null);
   const stageRef = useRef<any>(null);
 
@@ -137,6 +138,7 @@ const EditorCanvas = () => {
           <input type="color" value={brushColor} onChange={(e) => setBrushColor(e.target.value)} className="w-8 h-8 border p-0 cursor-pointer" />
         </div>
       </div>
+
       <div className="lg:w-1/2 h-full flex items-center justify-center">
         <div style={{ width: DISPLAY_WIDTH, height: DISPLAY_HEIGHT, transform: "translateY(-30px) scale(0.95)" }}>
           <Stage
