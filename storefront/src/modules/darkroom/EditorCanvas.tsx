@@ -5,6 +5,7 @@ import { Stage, Layer, Image as KonvaImage, Line, Transformer } from "react-konv
 import useImage from "use-image";
 import { useRouter } from "next/navigation";
 import { isMobile } from "react-device-detect";
+import { useGesture } from "@use-gesture/react";
 
 const CANVAS_WIDTH = 985;
 const CANVAS_HEIGHT = 1271;
@@ -28,8 +29,6 @@ const EditorCanvas = () => {
 
   const transformerRef = useRef<any>(null);
   const stageRef = useRef<any>(null);
-  const lastDistRef = useRef<number>(0);
-  const lastAngleRef = useRef<number>(0);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -48,8 +47,6 @@ const EditorCanvas = () => {
             rotation: 0,
             opacity: 1,
             id: Date.now().toString(),
-            scaleX: 1,
-            scaleY: 1,
           };
           setImages((prev) => [...prev, newImage]);
           setSelectedImageIndex(images.length);
@@ -100,9 +97,7 @@ const EditorCanvas = () => {
   });
 
   const handlePointerDown = (e: any) => {
-    if (e.target === e.target.getStage()) {
-      setSelectedImageIndex(null);
-    }
+    if (e.target === e.target.getStage()) setSelectedImageIndex(null);
     if (mode !== "brush") return;
     const pos = stageRef.current.getPointerPosition();
     if (!pos) return;
@@ -191,8 +186,6 @@ const EditorCanvas = () => {
                   rotation={img.rotation}
                   opacity={img.opacity}
                   draggable
-                  scaleX={img.scaleX || 1}
-                  scaleY={img.scaleY || 1}
                   onClick={() => setSelectedImageIndex(index)}
                   onTap={() => setSelectedImageIndex(index)}
                 />
