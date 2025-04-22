@@ -8,7 +8,7 @@ import { isMobile } from "react-device-detect";
 
 const CANVAS_WIDTH = 985;
 const CANVAS_HEIGHT = 1271;
-const DISPLAY_HEIGHT = isMobile ? 680 : 750;
+const DISPLAY_HEIGHT = isMobile ? 650 : 750;
 const DISPLAY_WIDTH = (DISPLAY_HEIGHT * CANVAS_WIDTH) / CANVAS_HEIGHT;
 
 const EditorCanvas = () => {
@@ -22,7 +22,7 @@ const EditorCanvas = () => {
   const [brushColor, setBrushColor] = useState("#d63384");
   const [brushSize, setBrushSize] = useState(4);
   const [mode, setMode] = useState<"move" | "brush">("brush");
-  const [menuOpen, setMenuOpen] = useState(isMobile ? false : true);
+  const [menuOpen, setMenuOpen] = useState(true);
 
   const [mockupImage] = useImage(
     mockupType === "front" ? "/mockups/MOCAP_FRONT.png" : "/mockups/MOCAP_BACK.png"
@@ -51,6 +51,7 @@ const EditorCanvas = () => {
           };
           setImages((prev) => [...prev, newImage]);
           setSelectedImageIndex(images.length);
+          setMode("move"); // Автоматически в Move
         };
       };
       reader.readAsDataURL(file);
@@ -99,7 +100,6 @@ const EditorCanvas = () => {
   const handlePointerDown = (e: any) => {
     if (e.target === e.target.getStage()) {
       setSelectedImageIndex(null);
-      if (isMobile) setMenuOpen(false);
     }
     if (mode !== "brush") return;
     const pos = stageRef.current.getPointerPosition();
@@ -126,9 +126,10 @@ const EditorCanvas = () => {
     <div className="w-screen h-screen bg-white overflow-hidden flex flex-col lg:flex-row">
       <div className={`lg:w-1/2 p-4 ${isMobile ? "absolute z-50 top-0 w-full bg-white" : ""}`}>
         {isMobile && (
-          <button className="text-sm mb-2 border px-3 py-1" onClick={() => setMenuOpen(!menuOpen)}>
-            Create
-          </button>
+          <div className="flex justify-between mb-2">
+            <button className="text-sm border px-3 py-1" onClick={() => setMenuOpen(!menuOpen)}>Create</button>
+            <button className="text-sm border px-3 py-1" onClick={() => window.history.back()}>Back</button>
+          </div>
         )}
         <div className={`${isMobile && !menuOpen ? "hidden" : "block"}`}>
           <div className="flex flex-wrap gap-2 mb-4 text-sm">
@@ -154,16 +155,18 @@ const EditorCanvas = () => {
               newImages[selectedImageIndex].opacity = Number(e.target.value);
               setImages(newImages);
             }
-          }} className="w-full mb-2 h-[2px] bg-black appearance-none cursor-pointer [&::-webkit-slider-thumb]:w-2 [&::-webkit-slider-thumb]:h-2 [&::-webkit-slider-thumb]:bg-black" />
+          }} className="w-full mb-2 h-[2px] bg-black appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2 [&::-webkit-slider-thumb]:h-2 [&::-webkit-slider-thumb]:bg-black [&::-webkit-slider-thumb]:rounded-none" />
+
           <label className="block text-xs mb-1">Brush Size: {brushSize}px</label>
-          <input type="range" min="1" max="30" value={brushSize} onChange={(e) => setBrushSize(Number(e.target.value))} className="w-full mb-2 h-[2px] bg-black appearance-none cursor-pointer [&::-webkit-slider-thumb]:w-2 [&::-webkit-slider-thumb]:h-2 [&::-webkit-slider-thumb]:bg-black" />
+          <input type="range" min="1" max="30" value={brushSize} onChange={(e) => setBrushSize(Number(e.target.value))} className="w-full mb-2 h-[2px] bg-black appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2 [&::-webkit-slider-thumb]:h-2 [&::-webkit-slider-thumb]:bg-black [&::-webkit-slider-thumb]:rounded-none" />
+
           <label className="block text-xs mb-1">Brush Color</label>
           <input type="color" value={brushColor} onChange={(e) => setBrushColor(e.target.value)} className="w-8 h-8 border p-0 cursor-pointer" />
         </div>
       </div>
 
       <div className="lg:w-1/2 h-full flex items-center justify-center">
-        <div style={{ width: DISPLAY_WIDTH, height: DISPLAY_HEIGHT }}>
+        <div style={{ width: DISPLAY_WIDTH, height: DISPLAY_HEIGHT, marginTop: isMobile ? 30 : 0 }}>
           <Stage
             width={DISPLAY_WIDTH}
             height={DISPLAY_HEIGHT}
@@ -191,7 +194,7 @@ const EditorCanvas = () => {
                   height={img.height}
                   rotation={img.rotation}
                   opacity={img.opacity}
-                  draggable={mode === "move"}
+                  draggable
                   onClick={() => setSelectedImageIndex(index)}
                   onTap={() => setSelectedImageIndex(index)}
                 />
@@ -207,9 +210,7 @@ const EditorCanvas = () => {
                   globalCompositeOperation="source-over"
                 />
               ))}
-              {!isMobile && selectedImageIndex !== null && (
-                <Transformer ref={transformerRef} rotateEnabled={true} />
-              )}
+              {selectedImageIndex !== null && <Transformer ref={transformerRef} rotateEnabled={true} />}
             </Layer>
           </Stage>
         </div>
