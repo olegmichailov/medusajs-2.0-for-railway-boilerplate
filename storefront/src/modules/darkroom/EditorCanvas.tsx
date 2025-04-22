@@ -1,4 +1,3 @@
-// src/modules/darkroom/EditorCanvas.tsx
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -21,25 +20,13 @@ const EditorCanvas = () => {
   const [copiedImage, setCopiedImage] = useState<any | null>(null);
   const [drawings, setDrawings] = useState<any[]>([]);
   const [isDrawing, setIsDrawing] = useState(false);
-  const [brushColor, setBrushColor] = useState("#d63384");
+  const [brushColor, setBrushColor] = useState("#000000");
   const [brushSize, setBrushSize] = useState(4);
   const [mode, setMode] = useState<"move" | "brush">("brush");
   const [menuOpen, setMenuOpen] = useState(false);
-  const [touchStartDist, setTouchStartDist] = useState<number | null>(null);
-  const [touchStartRotation, setTouchStartRotation] = useState<number | null>(null);
-
   const [mockupImage] = useImage(mockupType === "front" ? "/mockups/MOCAP_FRONT.png" : "/mockups/MOCAP_BACK.png");
-
   const transformerRef = useRef<any>(null);
   const stageRef = useRef<any>(null);
-
-  const getDistance = (p1: any, p2: any) => {
-    return Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
-  };
-
-  const getAngle = (p1: any, p2: any) => {
-    return Math.atan2(p2.y - p1.y, p2.x - p1.x);
-  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -58,6 +45,8 @@ const EditorCanvas = () => {
             rotation: 0,
             opacity: 1,
             id: Date.now().toString(),
+            scaleX: 1,
+            scaleY: 1,
           };
           setImages((prev) => [...prev, newImage]);
           setSelectedImageIndex(images.length);
@@ -68,28 +57,66 @@ const EditorCanvas = () => {
     }
   };
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
-      const copy = (isMac && e.metaKey && e.key === "c") || (!isMac && e.ctrlKey && e.key === "c");
-      const paste = (isMac && e.metaKey && e.key === "v") || (!isMac && e.ctrlKey && e.key === "v");
-      if (copy && selectedImageIndex !== null) {
-        setCopiedImage({ ...images[selectedImageIndex] });
+  const handleTouchTransform = (e: any) => {
+    if (selectedImageIndex === null) return;
+    const imageNode = stageRef.current.findOne(`#img-${selectedImageIndex}`);
+    if (!imageNode) return;
+
+    const touches = e.evt.touches;
+    if (touches.length === 2) {
+      const dx = touches[1].clientX - touches[0].clientX;
+      const dy = touches[1].clientY - touches[0].clientY;
+      const centerX = (touches[1].clientX + touches[0].clientX) / 2;
+      const centerY = (touches[1].clientY + touches[0].clientY) / 2;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
+
+      if (!imageNode.startDistance) {
+        imageNode.startDistance = distance;
+        imageNode.startRotation = imageNode.rotation();
+        imageNode.startScaleX = imageNode.scaleX();
+        imageNode.startScaleY = imageNode.scaleY();
+        return;
       }
-      if (paste && copiedImage) {
-        const duplicated = {
-          ...copiedImage,
-          id: Date.now().toString(),
-          x: copiedImage.x + 20,
-          y: copiedImage.y + 20,
-        };
-        setImages((prev) => [...prev, duplicated]);
-        setSelectedImageIndex(images.length);
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [copiedImage, selectedImageIndex, images]);
+
+      const scaleFactor = distance / imageNode.startDistance;
+      imageNode.scaleX(imageNode.startScaleX * scaleFactor);
+      imageNode.scaleY(imageNode.startScaleY * scaleFactor);
+      imageNode.rotation(imageNode.startRotation + angle);
+      imageNode.x(centerX - (imageNode.width() * imageNode.scaleX()) / 2);
+      imageNode.y(centerY - (imageNode.height() * imageNode.scaleY()) / 2);
+      stageRef.current.batchDraw();
+    }
+  };
+
+  const handlePointerDown = (e: any) => {
+    if (e.target === e.target.getStage()) {
+      setSelectedImageIndex(null);
+    }
+    if (mode !== "brush") return;
+    const pos = stageRef.current.getPointerPosition();
+    if (!pos) return;
+    const scaled = scalePos(pos);
+    setIsDrawing(true);
+    setDrawings([...drawings, { color: brushColor, size: brushSize, points: [scaled.x, scaled.y] }]);
+  };
+
+  const handlePointerMove = () => {
+    if (!isDrawing || mode !== "brush") return;
+    const pos = stageRef.current.getPointerPosition();
+    if (!pos) return;
+    const scaled = scalePos(pos);
+    const lastLine = drawings[drawings.length - 1];
+    lastLine.points = lastLine.points.concat([scaled.x, scaled.y]);
+    setDrawings([...drawings.slice(0, -1), lastLine]);
+  };
+
+  const handlePointerUp = () => setIsDrawing(false);
+
+  const scalePos = (pos: { x: number; y: number }) => ({
+    x: (pos.x * CANVAS_WIDTH) / DISPLAY_WIDTH,
+    y: (pos.y * CANVAS_HEIGHT) / DISPLAY_HEIGHT,
+  });
 
   useEffect(() => {
     if (transformerRef.current && selectedImageIndex !== null) {
@@ -101,54 +128,32 @@ const EditorCanvas = () => {
     }
   }, [selectedImageIndex]);
 
-  const scalePos = (pos: { x: number; y: number }) => ({
-    x: (pos.x * CANVAS_WIDTH) / DISPLAY_WIDTH,
-    y: (pos.y * CANVAS_HEIGHT) / DISPLAY_HEIGHT,
-  });
-
-  const handleTouchStart = (e: any) => {
-    if (e.evt.touches.length === 2 && selectedImageIndex !== null) {
-      const touch1 = e.evt.touches[0];
-      const touch2 = e.evt.touches[1];
-      setTouchStartDist(getDistance(touch1, touch2));
-      setTouchStartRotation(getAngle(touch1, touch2));
-    }
-  };
-
-  const handleTouchMove = (e: any) => {
-    if (e.evt.touches.length === 2 && selectedImageIndex !== null) {
-      const index = selectedImageIndex;
-      const touch1 = e.evt.touches[0];
-      const touch2 = e.evt.touches[1];
-      const currentDist = getDistance(touch1, touch2);
-      const currentAngle = getAngle(touch1, touch2);
-
-      const newImages = [...images];
-      const image = newImages[index];
-
-      if (touchStartDist && touchStartRotation !== null) {
-        const scaleFactor = currentDist / touchStartDist;
-        const rotationDelta = ((currentAngle - touchStartRotation) * 180) / Math.PI;
-        image.width *= scaleFactor;
-        image.height *= scaleFactor;
-        image.rotation += rotationDelta;
-        setImages(newImages);
-        setTouchStartDist(currentDist);
-        setTouchStartRotation(currentAngle);
-      }
-    }
-  };
-
   return (
     <div className="w-screen h-screen bg-white overflow-hidden flex flex-col lg:flex-row">
-      <div className="absolute top-4 w-full px-4 flex justify-between z-50">
-        <button className="border px-3 py-1 text-sm" onClick={() => router.back()}>Back</button>
-        <button className="border px-3 py-1 text-sm" onClick={() => setMenuOpen(!menuOpen)}>Create</button>
-      </div>
-
-      {menuOpen && (
-        <div className="absolute top-16 left-0 w-full bg-white p-4 z-40">
+      <div className={`lg:w-1/2 p-4 ${isMobile ? "absolute z-50 top-0 w-full bg-white" : ""}`}>
+        {isMobile && (
+          <div className="flex justify-between items-center mb-2">
+            <button onClick={() => router.back()} className="text-sm border px-3 py-1">Back</button>
+            <button className="text-sm border px-3 py-1" onClick={() => setMenuOpen(!menuOpen)}>Create</button>
+          </div>
+        )}
+        <div className={`${isMobile && !menuOpen ? "hidden" : "block"}`}>
+          <div className="flex flex-wrap gap-2 mb-4 text-sm">
+            <button className={`border px-3 py-1 ${mode === "move" ? "bg-black text-white" : ""}`} onClick={() => setMode("move")}>Move</button>
+            <button className={`border px-3 py-1 ${mode === "brush" ? "bg-black text-white" : ""}`} onClick={() => setMode("brush")}>Brush</button>
+            <button className="border px-3 py-1" onClick={() => setMockupType("front")}>Front</button>
+            <button className="border px-3 py-1" onClick={() => setMockupType("back")}>Back</button>
+            <button className="border px-3 py-1" onClick={() => setDrawings([])}>Clear</button>
+            <button className="bg-black text-white px-3 py-1" onClick={() => {
+              const uri = stageRef.current.toDataURL({ pixelRatio: 2 });
+              const a = document.createElement("a");
+              a.href = uri;
+              a.download = "composition.png";
+              a.click();
+            }}>Download</button>
+          </div>
           <input type="file" accept="image/*" onChange={handleFileChange} className="mb-3" />
+          <label className="block text-xs mb-1">Opacity: {Math.round(opacity * 100)}%</label>
           <input type="range" min="0" max="1" step="0.01" value={opacity} onChange={(e) => {
             setOpacity(Number(e.target.value));
             if (selectedImageIndex !== null) {
@@ -156,23 +161,26 @@ const EditorCanvas = () => {
               newImages[selectedImageIndex].opacity = Number(e.target.value);
               setImages(newImages);
             }
-          }} className="w-full mb-2 appearance-none h-[2px] bg-black" />
-          <input type="color" value={brushColor} onChange={(e) => setBrushColor(e.target.value)} className="w-8 h-8 border mb-2" />
+          }} className="w-full mb-2 h-[2px] bg-black appearance-none cursor-pointer" />
+          <label className="block text-xs mb-1">Brush Size: {brushSize}px</label>
+          <input type="range" min="1" max="30" value={brushSize} onChange={(e) => setBrushSize(Number(e.target.value))} className="w-full mb-2 h-[2px] bg-black appearance-none cursor-pointer" />
+          <label className="block text-xs mb-1">Brush Color</label>
+          <input type="color" value={brushColor} onChange={(e) => setBrushColor(e.target.value)} className="w-8 h-8 border p-0 cursor-pointer" />
         </div>
-      )}
-
-      <div className="flex-1 flex items-center justify-center">
+      </div>
+      <div className="lg:w-1/2 h-full flex items-center justify-center">
         <div style={{ width: DISPLAY_WIDTH, height: DISPLAY_HEIGHT, transform: "translateY(-30px) scale(0.95)" }}>
           <Stage
             width={DISPLAY_WIDTH}
             height={DISPLAY_HEIGHT}
             scale={{ x: DISPLAY_WIDTH / CANVAS_WIDTH, y: DISPLAY_HEIGHT / CANVAS_HEIGHT }}
             ref={stageRef}
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onMouseDown={(e) => {
-              if (e.target === e.target.getStage()) setSelectedImageIndex(null);
-            }}
+            onMouseDown={handlePointerDown}
+            onMousemove={handlePointerMove}
+            onMouseup={handlePointerUp}
+            onTouchStart={(e) => { handlePointerDown(e); handleTouchTransform(e); }}
+            onTouchMove={(e) => { handlePointerMove(e); handleTouchTransform(e); }}
+            onTouchEnd={handlePointerUp}
           >
             <Layer>
               {mockupImage && <KonvaImage image={mockupImage} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} />}
@@ -186,13 +194,26 @@ const EditorCanvas = () => {
                   width={img.width}
                   height={img.height}
                   rotation={img.rotation}
+                  scaleX={img.scaleX || 1}
+                  scaleY={img.scaleY || 1}
                   opacity={img.opacity}
-                  draggable
+                  draggable={mode === "move"}
                   onClick={() => setSelectedImageIndex(index)}
                   onTap={() => setSelectedImageIndex(index)}
                 />
               ))}
-              {selectedImageIndex !== null && !isMobile && <Transformer ref={transformerRef} rotateEnabled={true} />}
+              {drawings.map((line, i) => (
+                <Line
+                  key={i}
+                  points={line.points}
+                  stroke={line.color}
+                  strokeWidth={line.size}
+                  tension={0.5}
+                  lineCap="round"
+                  globalCompositeOperation="source-over"
+                />
+              ))}
+              {!isMobile && selectedImageIndex !== null && <Transformer ref={transformerRef} rotateEnabled={true} />}
             </Layer>
           </Stage>
         </div>
