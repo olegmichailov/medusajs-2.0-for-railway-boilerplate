@@ -96,7 +96,7 @@ const EditorCanvas = () => {
     y: (pos.y * CANVAS_HEIGHT) / DISPLAY_HEIGHT,
   });
 
-  const handlePointerDown = (e: any) => {
+  const handleMouseDown = (e: any) => {
     if (e.target === e.target.getStage()) {
       setSelectedImageIndex(null);
     }
@@ -108,7 +108,7 @@ const EditorCanvas = () => {
     setDrawings([...drawings, { tool: "pen", color: brushColor, size: brushSize, points: [scaled.x, scaled.y] }]);
   };
 
-  const handlePointerMove = () => {
+  const handleMouseMove = () => {
     if (!isDrawing || mode !== "brush") return;
     const pos = stageRef.current.getPointerPosition();
     if (!pos) return;
@@ -119,43 +119,50 @@ const EditorCanvas = () => {
     setDrawings(drawings.concat());
   };
 
-  const handlePointerUp = () => setIsDrawing(false);
+  const handleMouseUp = () => setIsDrawing(false);
 
   return (
-    <div className="w-screen h-screen bg-white overflow-hidden flex flex-col lg:flex-row">
+    <div className="relative w-screen h-screen bg-white overflow-hidden flex flex-col lg:flex-row">
       <div className={`lg:w-1/2 p-4 ${isMobile ? "absolute z-50 top-0 w-full bg-white" : ""}`}>
         {isMobile && (
           <button className="text-sm mb-2 border px-3 py-1" onClick={() => setMenuOpen(!menuOpen)}>Create</button>
         )}
         <div className={`${isMobile && !menuOpen ? "hidden" : "block"}`}>
           <div className="flex flex-wrap gap-2 mb-4 text-sm">
+            <button className={`border px-3 py-1 ${mockupType === "front" ? "bg-black text-white" : ""}`} onClick={() => setMockupType("front")}>Front</button>
+            <button className={`border px-3 py-1 ${mockupType === "back" ? "bg-black text-white" : ""}`} onClick={() => setMockupType("back")}>Back</button>
+            <button className="border px-3 py-1" onClick={() => setDrawings([])}>Clear</button>
             <button className={`border px-3 py-1 ${mode === "move" ? "bg-black text-white" : ""}`} onClick={() => setMode("move")}>Move</button>
             <button className={`border px-3 py-1 ${mode === "brush" ? "bg-black text-white" : ""}`} onClick={() => setMode("brush")}>Brush</button>
-            <button className="border px-3 py-1" onClick={() => setMockupType("front")}>Front</button>
-            <button className="border px-3 py-1" onClick={() => setMockupType("back")}>Back</button>
-            <button className="border px-3 py-1" onClick={() => setDrawings([])}>Clear</button>
-            <button className="bg-black text-white px-3 py-1" onClick={() => {
-              const uri = stageRef.current.toDataURL({ pixelRatio: 2 });
-              const a = document.createElement("a");
-              a.href = uri;
-              a.download = "composition.png";
-              a.click();
-            }}>Download</button>
+            <button
+              className="bg-black text-white px-3 py-1"
+              onClick={() => {
+                const uri = stageRef.current.toDataURL({ pixelRatio: 2 });
+                const a = document.createElement("a");
+                a.href = uri;
+                a.download = "composition.png";
+                a.click();
+              }}
+            >Download</button>
           </div>
           <input type="file" accept="image/*" onChange={handleFileChange} className="mb-3" />
           <label className="block text-xs mb-1">Opacity: {Math.round(opacity * 100)}%</label>
-          <input type="range" min="0" max="1" step="0.01" value={opacity} onChange={(e) => {
-            setOpacity(Number(e.target.value));
-            if (selectedImageIndex !== null) {
-              const newImages = [...images];
-              newImages[selectedImageIndex].opacity = Number(e.target.value);
-              setImages(newImages);
-            }
-          }} className="w-full mb-2 h-[2px] bg-black appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2 [&::-webkit-slider-thumb]:h-2 [&::-webkit-slider-thumb]:bg-black [&::-webkit-slider-thumb]:rounded-none" />
-
+          <input type="range" min="0" max="1" step="0.01" value={opacity}
+            onChange={(e) => {
+              setOpacity(Number(e.target.value));
+              if (selectedImageIndex !== null) {
+                const newImages = [...images];
+                newImages[selectedImageIndex].opacity = Number(e.target.value);
+                setImages(newImages);
+              }
+            }}
+            className="w-full mb-2 h-[2px] bg-black appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2 [&::-webkit-slider-thumb]:h-2 [&::-webkit-slider-thumb]:bg-black [&::-webkit-slider-thumb]:rounded-none"
+          />
           <label className="block text-xs mb-1">Brush Size: {brushSize}px</label>
-          <input type="range" min="1" max="30" value={brushSize} onChange={(e) => setBrushSize(Number(e.target.value))} className="w-full mb-2 h-[2px] bg-black appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2 [&::-webkit-slider-thumb]:h-2 [&::-webkit-slider-thumb]:bg-black [&::-webkit-slider-thumb]:rounded-none" />
-
+          <input type="range" min="1" max="30" value={brushSize}
+            onChange={(e) => setBrushSize(Number(e.target.value))}
+            className="w-full mb-2 h-[2px] bg-black appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2 [&::-webkit-slider-thumb]:h-2 [&::-webkit-slider-thumb]:bg-black [&::-webkit-slider-thumb]:rounded-none"
+          />
           <label className="block text-xs mb-1">Brush Color</label>
           <input type="color" value={brushColor} onChange={(e) => setBrushColor(e.target.value)} className="w-8 h-8 border p-0 cursor-pointer" />
         </div>
@@ -168,12 +175,9 @@ const EditorCanvas = () => {
             height={DISPLAY_HEIGHT}
             scale={{ x: DISPLAY_WIDTH / CANVAS_WIDTH, y: DISPLAY_HEIGHT / CANVAS_HEIGHT }}
             ref={stageRef}
-            onMouseDown={handlePointerDown}
-            onMousemove={handlePointerMove}
-            onMouseup={handlePointerUp}
-            onTouchStart={handlePointerDown}
-            onTouchMove={handlePointerMove}
-            onTouchEnd={handlePointerUp}
+            onMouseDown={handleMouseDown}
+            onMousemove={handleMouseMove}
+            onMouseup={handleMouseUp}
           >
             <Layer>
               {mockupImage && (
