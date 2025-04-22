@@ -21,6 +21,7 @@ const EditorCanvas = () => {
   const [brushColor, setBrushColor] = useState("#d63384");
   const [brushSize, setBrushSize] = useState(4);
   const [mode, setMode] = useState<"move" | "brush">("move");
+  const [showMenu, setShowMenu] = useState(true);
 
   const [mockupImage] = useImage(
     mockupType === "front" ? "/mockups/MOCAP_FRONT.png" : "/mockups/MOCAP_BACK.png"
@@ -120,77 +121,46 @@ const EditorCanvas = () => {
   const handleMouseUp = () => setIsDrawing(false);
 
   return (
-    <div className="w-screen h-screen flex bg-white">
-      <div className="w-1/2 p-10">
-        <div className="mb-4">
-          <label className="block text-lg font-semibold mb-2">Upload Print</label>
-          <input type="file" accept="image/*" onChange={handleFileChange} />
+    <div className="relative w-screen h-screen bg-white overflow-hidden">
+      {showMenu && (
+        <div className="absolute top-0 left-0 w-full bg-white z-10 p-4 flex flex-wrap gap-2 justify-center">
+          <button onClick={() => setShowMenu(false)} className="absolute right-4 top-4">✕</button>
+          <input type="file" accept="image/*" onChange={handleFileChange} className="text-sm" />
+          <input type="color" value={brushColor} onChange={(e) => setBrushColor(e.target.value)} />
+          <input type="range" min="1" max="30" value={brushSize} onChange={(e) => setBrushSize(Number(e.target.value))} />
+          <input type="range" min="0" max="1" step="0.01" value={opacity} onChange={(e) => {
+            setOpacity(Number(e.target.value));
+            if (selectedImageIndex !== null) {
+              const newImages = [...images];
+              newImages[selectedImageIndex].opacity = Number(e.target.value);
+              setImages(newImages);
+            }
+          }} />
+          <button onClick={() => setMockupType("front")}>Front</button>
+          <button onClick={() => setMockupType("back")}>Back</button>
+          <button onClick={() => setDrawings([])}>Clear</button>
+          <button onClick={() => setMode("move")}>Move</button>
+          <button onClick={() => setMode("brush")}>Brush</button>
+          <button onClick={() => {
+            const uri = stageRef.current.toDataURL({ pixelRatio: 2 });
+            const a = document.createElement("a");
+            a.href = uri;
+            a.download = "composition.png";
+            a.click();
+          }}>Download</button>
         </div>
+      )}
 
-        <div className="mb-4">
-          <label className="block text-sm font-medium">Opacity: {Math.round(opacity * 100)}%</label>
-          <input
-            type="range"
-            min="0"
-            max="1"
-            step="0.01"
-            value={opacity}
-            onChange={(e) => {
-              setOpacity(Number(e.target.value));
-              if (selectedImageIndex !== null) {
-                const newImages = [...images];
-                newImages[selectedImageIndex].opacity = Number(e.target.value);
-                setImages(newImages);
-              }
-            }}
-            className="w-full h-[2px] bg-black appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2 [&::-webkit-slider-thumb]:h-2 [&::-webkit-slider-thumb]:bg-black [&::-webkit-slider-thumb]:rounded-none"
-          />
-        </div>
+      {!showMenu && (
+        <button
+          className="absolute top-4 right-4 z-10 bg-black text-white px-3 py-1 rounded"
+          onClick={() => setShowMenu(true)}
+        >
+          Create
+        </button>
+      )}
 
-        <div className="flex flex-wrap gap-2 mb-4">
-          <button className="border px-4 py-1 text-sm" onClick={() => setMockupType("front")}>Front</button>
-          <button className="border px-4 py-1 text-sm" onClick={() => setMockupType("back")}>Back</button>
-          <button className="border px-4 py-1 text-sm" onClick={() => setDrawings([])}>Clear Drawing</button>
-          <button className="border px-4 py-1 text-sm" onClick={() => setMode("move")}>Move</button>
-          <button className="border px-4 py-1 text-sm" onClick={() => setMode("brush")}>Brush</button>
-          <button
-            className="bg-black text-white px-4 py-1 text-sm"
-            onClick={() => {
-              const uri = stageRef.current.toDataURL({ pixelRatio: 2 });
-              const a = document.createElement("a");
-              a.href = uri;
-              a.download = "composition.png";
-              a.click();
-            }}
-          >
-            Download
-          </button>
-        </div>
-
-        <div className="mb-4">
-          <label className="block text-sm font-medium mb-1">Brush Color</label>
-          <input
-            type="color"
-            value={brushColor}
-            onChange={(e) => setBrushColor(e.target.value)}
-            className="w-8 h-8 border p-0 cursor-pointer"
-          />
-        </div>
-
-        <div className="mb-4">
-          <label className="block text-sm font-medium">Brush Size</label>
-          <input
-            type="range"
-            min="1"
-            max="30"
-            value={brushSize}
-            onChange={(e) => setBrushSize(Number(e.target.value))}
-            className="w-full h-[2px] bg-black appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2 [&::-webkit-slider-thumb]:h-2 [&::-webkit-slider-thumb]:bg-black [&::-webkit-slider-thumb]:rounded-none"
-          />
-        </div>
-      </div>
-
-      <div className="w-1/2 h-full flex items-center justify-center">
+      <div className="w-full h-full flex items-center justify-center">
         <div style={{ width: DISPLAY_WIDTH, height: DISPLAY_HEIGHT }}>
           <Stage
             width={DISPLAY_WIDTH}
