@@ -1,3 +1,4 @@
+// src/modules/darkroom/EditorCanvas.tsx
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -25,8 +26,10 @@ const EditorCanvas = () => {
   const [mode, setMode] = useState<"move" | "brush">("brush");
   const [menuOpen, setMenuOpen] = useState(false);
   const [mockupImage] = useImage(mockupType === "front" ? "/mockups/MOCAP_FRONT.png" : "/mockups/MOCAP_BACK.png");
+
   const transformerRef = useRef<any>(null);
   const stageRef = useRef<any>(null);
+  const gestureRef = useRef<any>({});
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -58,41 +61,41 @@ const EditorCanvas = () => {
   };
 
   const handleTouchTransform = (e: any) => {
-    if (selectedImageIndex === null) return;
-    const imageNode = stageRef.current.findOne(`#img-${selectedImageIndex}`);
-    if (!imageNode) return;
-
+    if (selectedImageIndex === null || mode !== "move") return;
+    const node = stageRef.current.findOne(`#img-${selectedImageIndex}`);
     const touches = e.evt.touches;
-    if (touches.length === 2) {
-      const dx = touches[1].clientX - touches[0].clientX;
-      const dy = touches[1].clientY - touches[0].clientY;
-      const centerX = (touches[1].clientX + touches[0].clientX) / 2;
-      const centerY = (touches[1].clientY + touches[0].clientY) / 2;
-      const distance = Math.sqrt(dx * dx + dy * dy);
-      const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
+    if (touches.length !== 2 || !node) return;
 
-      if (!imageNode.startDistance) {
-        imageNode.startDistance = distance;
-        imageNode.startRotation = imageNode.rotation();
-        imageNode.startScaleX = imageNode.scaleX();
-        imageNode.startScaleY = imageNode.scaleY();
-        return;
-      }
+    const dx = touches[1].clientX - touches[0].clientX;
+    const dy = touches[1].clientY - touches[0].clientY;
+    const centerX = (touches[1].clientX + touches[0].clientX) / 2;
+    const centerY = (touches[1].clientY + touches[0].clientY) / 2;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
 
-      const scaleFactor = distance / imageNode.startDistance;
-      imageNode.scaleX(imageNode.startScaleX * scaleFactor);
-      imageNode.scaleY(imageNode.startScaleY * scaleFactor);
-      imageNode.rotation(imageNode.startRotation + angle);
-      imageNode.x(centerX - (imageNode.width() * imageNode.scaleX()) / 2);
-      imageNode.y(centerY - (imageNode.height() * imageNode.scaleY()) / 2);
-      stageRef.current.batchDraw();
+    if (!gestureRef.current.startDistance) {
+      gestureRef.current = {
+        startDistance: distance,
+        startRotation: node.rotation(),
+        startScaleX: node.scaleX(),
+        startScaleY: node.scaleY(),
+      };
+      return;
     }
+
+    const scaleFactor = distance / gestureRef.current.startDistance;
+    node.scaleX(gestureRef.current.startScaleX * scaleFactor);
+    node.scaleY(gestureRef.current.startScaleY * scaleFactor);
+    node.rotation(gestureRef.current.startRotation + angle);
+  };
+
+  const handleTouchEnd = () => {
+    gestureRef.current = {};
+    setIsDrawing(false);
   };
 
   const handlePointerDown = (e: any) => {
-    if (e.target === e.target.getStage()) {
-      setSelectedImageIndex(null);
-    }
+    if (e.target === e.target.getStage()) setSelectedImageIndex(null);
     if (mode !== "brush") return;
     const pos = stageRef.current.getPointerPosition();
     if (!pos) return;
@@ -110,8 +113,6 @@ const EditorCanvas = () => {
     lastLine.points = lastLine.points.concat([scaled.x, scaled.y]);
     setDrawings([...drawings.slice(0, -1), lastLine]);
   };
-
-  const handlePointerUp = () => setIsDrawing(false);
 
   const scalePos = (pos: { x: number; y: number }) => ({
     x: (pos.x * CANVAS_WIDTH) / DISPLAY_WIDTH,
@@ -161,13 +162,14 @@ const EditorCanvas = () => {
               newImages[selectedImageIndex].opacity = Number(e.target.value);
               setImages(newImages);
             }
-          }} className="w-full mb-2 h-[2px] bg-black appearance-none cursor-pointer" />
+          }} className="w-full mb-2 h-[2px] bg-black appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2 [&::-webkit-slider-thumb]:h-2 [&::-webkit-slider-thumb]:bg-black" />
           <label className="block text-xs mb-1">Brush Size: {brushSize}px</label>
-          <input type="range" min="1" max="30" value={brushSize} onChange={(e) => setBrushSize(Number(e.target.value))} className="w-full mb-2 h-[2px] bg-black appearance-none cursor-pointer" />
+          <input type="range" min="1" max="30" value={brushSize} onChange={(e) => setBrushSize(Number(e.target.value))} className="w-full mb-2 h-[2px] bg-black appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2 [&::-webkit-slider-thumb]:h-2 [&::-webkit-slider-thumb]:bg-black" />
           <label className="block text-xs mb-1">Brush Color</label>
           <input type="color" value={brushColor} onChange={(e) => setBrushColor(e.target.value)} className="w-8 h-8 border p-0 cursor-pointer" />
         </div>
       </div>
+
       <div className="lg:w-1/2 h-full flex items-center justify-center">
         <div style={{ width: DISPLAY_WIDTH, height: DISPLAY_HEIGHT, transform: "translateY(-30px) scale(0.95)" }}>
           <Stage
@@ -177,10 +179,10 @@ const EditorCanvas = () => {
             ref={stageRef}
             onMouseDown={handlePointerDown}
             onMousemove={handlePointerMove}
-            onMouseup={handlePointerUp}
+            onMouseup={handleTouchEnd}
             onTouchStart={(e) => { handlePointerDown(e); handleTouchTransform(e); }}
             onTouchMove={(e) => { handlePointerMove(e); handleTouchTransform(e); }}
-            onTouchEnd={handlePointerUp}
+            onTouchEnd={handleTouchEnd}
           >
             <Layer>
               {mockupImage && <KonvaImage image={mockupImage} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} />}
