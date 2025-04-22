@@ -8,7 +8,7 @@ import { isMobile } from "react-device-detect";
 
 const CANVAS_WIDTH = 985;
 const CANVAS_HEIGHT = 1271;
-const DISPLAY_HEIGHT = 750;
+const DISPLAY_HEIGHT = isMobile ? 680 : 750;
 const DISPLAY_WIDTH = (DISPLAY_HEIGHT * CANVAS_WIDTH) / CANVAS_HEIGHT;
 
 const EditorCanvas = () => {
@@ -21,8 +21,8 @@ const EditorCanvas = () => {
   const [isDrawing, setIsDrawing] = useState(false);
   const [brushColor, setBrushColor] = useState("#d63384");
   const [brushSize, setBrushSize] = useState(4);
-  const [mode, setMode] = useState<"move" | "brush">("move");
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [mode, setMode] = useState<"move" | "brush">("brush");
+  const [menuOpen, setMenuOpen] = useState(true);
 
   const [mockupImage] = useImage(
     mockupType === "front" ? "/mockups/MOCAP_FRONT.png" : "/mockups/MOCAP_BACK.png"
@@ -151,10 +151,10 @@ const EditorCanvas = () => {
               newImages[selectedImageIndex].opacity = Number(e.target.value);
               setImages(newImages);
             }
-          }} className="w-full mb-2 h-[2px] bg-black appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2 [&::-webkit-slider-thumb]:h-2 [&::-webkit-slider-thumb]:bg-black [&::-webkit-slider-thumb]:rounded-none" />
+          }} className="w-full mb-2 h-[2px] bg-black appearance-none cursor-pointer" />
 
           <label className="block text-xs mb-1">Brush Size: {brushSize}px</label>
-          <input type="range" min="1" max="30" value={brushSize} onChange={(e) => setBrushSize(Number(e.target.value))} className="w-full mb-2 h-[2px] bg-black appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2 [&::-webkit-slider-thumb]:h-2 [&::-webkit-slider-thumb]:bg-black [&::-webkit-slider-thumb]:rounded-none" />
+          <input type="range" min="1" max="30" value={brushSize} onChange={(e) => setBrushSize(Number(e.target.value))} className="w-full mb-2 h-[2px] bg-black appearance-none cursor-pointer" />
 
           <label className="block text-xs mb-1">Brush Color</label>
           <input type="color" value={brushColor} onChange={(e) => setBrushColor(e.target.value)} className="w-8 h-8 border p-0 cursor-pointer" />
