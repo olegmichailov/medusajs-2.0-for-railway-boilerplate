@@ -1,39 +1,35 @@
+// src/modules/darkroom/EditorCanvas.tsx
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import {
-  Stage,
-  Layer,
-  Image as KonvaImage,
-  Transformer,
-  Line,
-} from "react-konva";
+import { Stage, Layer, Image as KonvaImage, Transformer, Line } from "react-konva";
 import useImage from "use-image";
+import { HexColorPicker } from "react-colorful";
 
 const CANVAS_WIDTH = 985;
 const CANVAS_HEIGHT = 1271;
-const DISPLAY_HEIGHT = 750;
-const DISPLAY_WIDTH = (DISPLAY_HEIGHT * CANVAS_WIDTH) / CANVAS_HEIGHT;
+const DISPLAY_WIDTH = 500;
+const DISPLAY_HEIGHT = 645;
 
 const EditorCanvas = () => {
   const [images, setImages] = useState<any[]>([]);
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
   const [opacity, setOpacity] = useState(1);
-  const [brushSize, setBrushSize] = useState(3);
-  const [isDrawing, setIsDrawing] = useState(false);
-  const [lines, setLines] = useState<any[]>([]);
   const [mockupType, setMockupType] = useState<"front" | "back">("front");
-  const [tool, setTool] = useState<"move" | "brush">("move");
   const [copiedImage, setCopiedImage] = useState<any | null>(null);
 
   const [mockupImage] = useImage(
-    mockupType === "front"
-      ? "/mockups/MOCAP_FRONT.png"
-      : "/mockups/MOCAP_BACK.png"
+    mockupType === "front" ? "/mockups/MOCAP_FRONT.png" : "/mockups/MOCAP_BACK.png"
   );
 
-  const transformerRef = useRef<any>(null);
+  const [tool, setTool] = useState<"move" | "brush">("move");
+  const [lines, setLines] = useState<any[]>([]);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [brushColor, setBrushColor] = useState("#f021c3");
+  const [brushSize, setBrushSize] = useState(4);
+
   const stageRef = useRef<any>(null);
+  const transformerRef = useRef<any>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -58,13 +54,6 @@ const EditorCanvas = () => {
         };
       };
       reader.readAsDataURL(file);
-    }
-  };
-
-  const handleDeselect = (e: any) => {
-    const clickedOnEmpty = e.target === e.target.getStage();
-    if (clickedOnEmpty) {
-      setSelectedImageIndex(null);
     }
   };
 
@@ -94,19 +83,23 @@ const EditorCanvas = () => {
 
   useEffect(() => {
     if (transformerRef.current && selectedImageIndex !== null) {
-      const node = stageRef.current.findOne(`#img-${selectedImageIndex}`);
-      if (node) {
-        transformerRef.current.nodes([node]);
-        transformerRef.current.getLayer().batchDraw();
-      }
+      transformerRef.current.nodes([
+        stageRef.current.findOne(`#img-${selectedImageIndex}`),
+      ]);
+      transformerRef.current.getLayer().batchDraw();
     }
   }, [selectedImageIndex]);
 
+  const handleDeselect = (e: any) => {
+    const clickedOnEmpty = e.target === e.target.getStage();
+    if (clickedOnEmpty) setSelectedImageIndex(null);
+  };
+
   const handleMouseDown = (e: any) => {
     if (tool !== "brush") return;
-    const pos = e.target.getStage().getPointerPosition();
-    setLines([...lines, { tool, points: [pos.x, pos.y], strokeWidth: brushSize }]);
     setIsDrawing(true);
+    const pos = e.target.getStage().getPointerPosition();
+    setLines([...lines, { tool, points: [pos.x, pos.y], stroke: brushColor, strokeWidth: brushSize }]);
   };
 
   const handleMouseMove = (e: any) => {
@@ -119,9 +112,7 @@ const EditorCanvas = () => {
     setLines(lines.concat());
   };
 
-  const handleMouseUp = () => {
-    setIsDrawing(false);
-  };
+  const handleMouseUp = () => setIsDrawing(false);
 
   return (
     <div className="w-screen h-screen flex bg-white">
@@ -129,7 +120,6 @@ const EditorCanvas = () => {
         <div className="mb-4">
           <label className="block text-lg font-semibold mb-2">Upload Print</label>
           <input type="file" accept="image/*" onChange={handleFileChange} />
-          <p className="text-sm text-gray-500 mt-2">Drag, scale, rotate print freely</p>
         </div>
         <div className="mb-4">
           <label className="block text-sm font-medium mb-1">Opacity: {Math.round(opacity * 100)}%</label>
@@ -147,76 +137,93 @@ const EditorCanvas = () => {
                 setImages(newImages);
               }
             }}
-            className="w-full h-[2px] bg-black appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-[6px] [&::-webkit-slider-thumb]:h-[6px] [&::-webkit-slider-thumb]:bg-black [&::-webkit-slider-thumb]:rounded-none"
+            className="w-full h-[2px] bg-black appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-black [&::-webkit-slider-thumb]:rounded-none"
           />
         </div>
-        <div className="flex gap-2 flex-wrap">
-          <button className="border px-3 py-1 text-sm" onClick={() => setMockupType("front")}>Front</button>
-          <button className="border px-3 py-1 text-sm" onClick={() => setMockupType("back")}>Back</button>
-          <button className="border px-3 py-1 text-sm" onClick={() => setTool("move")}>Move</button>
-          <button className="border px-3 py-1 text-sm" onClick={() => setTool("brush")}>Brush</button>
-          <button className="border px-3 py-1 text-sm" onClick={() => setLines([])}>Clear Drawing</button>
+        <div className="mb-4">
+          <label className="block text-sm font-medium mb-1">Brush Size: {brushSize}px</label>
+          <input
+            type="range"
+            min="1"
+            max="50"
+            value={brushSize}
+            onChange={(e) => setBrushSize(Number(e.target.value))}
+            className="w-full h-[2px] bg-black appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-black [&::-webkit-slider-thumb]:rounded-none"
+          />
+        </div>
+        <div className="mb-4">
+          <label className="block text-sm font-medium mb-1">Brush Color</label>
+          <HexColorPicker color={brushColor} onChange={setBrushColor} />
+        </div>
+        <div className="flex gap-2 mt-4">
+          <button className="border px-4 py-2" onClick={() => setTool("move")}>Move</button>
+          <button className="border px-4 py-2" onClick={() => setTool("brush")}>Brush</button>
+          <button className="border px-4 py-2" onClick={() => setMockupType("front")}>Front</button>
+          <button className="border px-4 py-2" onClick={() => setMockupType("back")}>Back</button>
+        </div>
+        <div className="mt-4">
           <button
-            className="bg-black text-white px-4 py-1 text-sm"
-            onClick={() => {
-              const uri = stageRef.current.toDataURL({ pixelRatio: 2 });
-              const a = document.createElement("a");
-              a.href = uri;
-              a.download = "darkroom-design.png";
-              a.click();
-            }}
+            className="bg-black text-white px-4 py-2"
+            onClick={() => console.log("Download stub")}
           >
             Download
           </button>
         </div>
       </div>
+
       <div className="w-1/2 h-full flex items-center justify-center">
-        <Stage
-          ref={stageRef}
-          width={DISPLAY_WIDTH}
-          height={DISPLAY_HEIGHT}
-          scale={{ x: DISPLAY_WIDTH / CANVAS_WIDTH, y: DISPLAY_HEIGHT / CANVAS_HEIGHT }}
-          onMouseDown={(e) => {
-            handleDeselect(e);
-            handleMouseDown(e);
-          }}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-        >
-          <Layer>
-            {mockupImage && (
-              <KonvaImage image={mockupImage} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} />
-            )}
-            {images.map((img, index) => (
-              <KonvaImage
-                key={img.id}
-                id={`img-${index}`}
-                image={img.image}
-                x={img.x}
-                y={img.y}
-                width={img.width}
-                height={img.height}
-                rotation={img.rotation}
-                opacity={img.opacity}
-                draggable
-                onClick={() => setSelectedImageIndex(index)}
-                onTap={() => setSelectedImageIndex(index)}
-              />
-            ))}
-            {lines.map((line, i) => (
-              <Line
-                key={i}
-                points={line.points}
-                stroke="#f54291"
-                strokeWidth={line.strokeWidth}
-                tension={0.5}
-                lineCap="round"
-                globalCompositeOperation="source-over"
-              />
-            ))}
-            {selectedImageIndex !== null && <Transformer ref={transformerRef} rotateEnabled={true} />}
-          </Layer>
-        </Stage>
+        <div style={{ width: DISPLAY_WIDTH, height: DISPLAY_HEIGHT }}>
+          <Stage
+            width={DISPLAY_WIDTH}
+            height={DISPLAY_HEIGHT}
+            scale={{ x: DISPLAY_WIDTH / CANVAS_WIDTH, y: DISPLAY_HEIGHT / CANVAS_HEIGHT }}
+            ref={stageRef}
+            onMouseDown={(e) => {
+              handleMouseDown(e);
+              handleDeselect(e);
+            }}
+            onMousemove={handleMouseMove}
+            onMouseup={handleMouseUp}
+          >
+            <Layer>
+              {mockupImage && (
+                <KonvaImage
+                  image={mockupImage}
+                  width={CANVAS_WIDTH}
+                  height={CANVAS_HEIGHT}
+                />
+              )}
+              {images.map((img, index) => (
+                <KonvaImage
+                  key={img.id}
+                  id={`img-${index}`}
+                  image={img.image}
+                  x={img.x}
+                  y={img.y}
+                  width={img.width}
+                  height={img.height}
+                  rotation={img.rotation}
+                  opacity={img.opacity}
+                  draggable
+                  onClick={() => setSelectedImageIndex(index)}
+                  onTap={() => setSelectedImageIndex(index)}
+                />
+              ))}
+              {lines.map((line, i) => (
+                <Line
+                  key={i}
+                  points={line.points}
+                  stroke={line.stroke}
+                  strokeWidth={line.strokeWidth}
+                  tension={0.5}
+                  lineCap="round"
+                  globalCompositeOperation="source-over"
+                />
+              ))}
+              {selectedImageIndex !== null && <Transformer ref={transformerRef} rotateEnabled={true} />}
+            </Layer>
+          </Stage>
+        </div>
       </div>
     </div>
   );
