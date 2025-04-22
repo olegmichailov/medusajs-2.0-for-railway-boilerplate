@@ -21,7 +21,7 @@ const EditorCanvas = () => {
   const [copiedImage, setCopiedImage] = useState<any | null>(null);
   const [drawings, setDrawings] = useState<any[]>([]);
   const [isDrawing, setIsDrawing] = useState(false);
-  const [brushColor, setBrushColor] = useState("#000000");
+  const [brushColor, setBrushColor] = useState("#d63384");
   const [brushSize, setBrushSize] = useState(4);
   const [mode, setMode] = useState<"move" | "brush">("brush");
   const [menuOpen, setMenuOpen] = useState(false);
@@ -58,6 +58,11 @@ const EditorCanvas = () => {
     }
   };
 
+  const scalePos = (pos: { x: number; y: number }) => ({
+    x: (pos.x * CANVAS_WIDTH) / DISPLAY_WIDTH,
+    y: (pos.y * CANVAS_HEIGHT) / DISPLAY_HEIGHT,
+  });
+
   const handlePointerDown = (e: any) => {
     if (e.target === e.target.getStage()) {
       setSelectedImageIndex(null);
@@ -81,11 +86,6 @@ const EditorCanvas = () => {
   };
 
   const handlePointerUp = () => setIsDrawing(false);
-
-  const scalePos = (pos: { x: number; y: number }) => ({
-    x: (pos.x * CANVAS_WIDTH) / DISPLAY_WIDTH,
-    y: (pos.y * CANVAS_HEIGHT) / DISPLAY_HEIGHT,
-  });
 
   useEffect(() => {
     if (transformerRef.current && selectedImageIndex !== null) {
