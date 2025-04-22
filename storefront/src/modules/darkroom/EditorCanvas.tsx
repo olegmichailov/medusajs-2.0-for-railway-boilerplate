@@ -1,3 +1,4 @@
+// src/modules/darkroom/EditorCanvas.tsx
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -6,8 +7,8 @@ import useImage from "use-image";
 
 const CANVAS_WIDTH = 985;
 const CANVAS_HEIGHT = 1271;
-const DISPLAY_HEIGHT = 750;
-const DISPLAY_WIDTH = (DISPLAY_HEIGHT / CANVAS_HEIGHT) * CANVAS_WIDTH;
+const DISPLAY_WIDTH = 500;
+const DISPLAY_HEIGHT = 645; // сохранение пропорции 985:1271
 
 const EditorCanvas = () => {
   const [images, setImages] = useState<any[]>([]);
@@ -87,9 +88,17 @@ const EditorCanvas = () => {
     if (clickedOnEmpty) setSelectedImageIndex(null);
   };
 
+  const downloadPNG = () => {
+    const uri = stageRef.current.toDataURL({ pixelRatio: 2 });
+    const link = document.createElement("a");
+    link.download = "composition.png";
+    link.href = uri;
+    link.click();
+  };
+
   return (
-    <div className="w-screen h-screen flex bg-white overflow-hidden">
-      <div className="w-1/2 p-10 overflow-auto">
+    <div className="w-screen h-screen flex bg-white">
+      <div className="w-1/2 p-10">
         <div className="mb-4">
           <label className="block text-lg font-semibold mb-2">Upload Print</label>
           <input type="file" accept="image/*" onChange={handleFileChange} />
@@ -111,7 +120,7 @@ const EditorCanvas = () => {
                 setImages(newImages);
               }
             }}
-            className="w-full h-[2px] bg-black appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-black [&::-webkit-slider-thumb]:rounded-none"
+            className="w-full h-[1px] bg-black appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-[6px] [&::-webkit-slider-thumb]:h-[6px] [&::-webkit-slider-thumb]:bg-black [&::-webkit-slider-thumb]:rounded-none"
           />
         </div>
         <div className="flex gap-2">
@@ -119,15 +128,14 @@ const EditorCanvas = () => {
           <button className="border px-4 py-2" onClick={() => setMockupType("back")}>Back</button>
           <button
             className="bg-black text-white px-4 py-2"
-            onClick={() => console.log("Print", images)}
+            onClick={downloadPNG}
           >
-            Print
+            Download
           </button>
         </div>
       </div>
-
       <div className="w-1/2 h-full flex items-center justify-center">
-        <div className="border border-dashed border-gray-400" style={{ width: DISPLAY_WIDTH, height: DISPLAY_HEIGHT }}>
+        <div style={{ width: DISPLAY_WIDTH, height: DISPLAY_HEIGHT }}>
           <Stage
             width={DISPLAY_WIDTH}
             height={DISPLAY_HEIGHT}
