@@ -4,7 +4,6 @@ import { Metadata } from "next"
 import Nav from "@modules/layout/templates/nav"
 import Footer from "@modules/layout/templates/footer"
 import "styles/globals.css"
-import { usePathname } from "next/navigation"
 
 export const metadata: Metadata = {
   metadataBase: new URL(getBaseURL()),
@@ -29,10 +28,11 @@ export const metadata: Metadata = {
   },
 }
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
-  const path = typeof window !== "undefined" ? window.location.pathname : ""
-  const hideFooter = path.startsWith("/de/darkroom") || path.startsWith("/en/darkroom")
-
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
   return (
     <html lang="en" data-mode="light">
       <head>
@@ -50,8 +50,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="m-0 p-0 font-sans tracking-wide text-base antialiased bg-white text-[#111827]">
         <Nav />
-        <main className="m-0 p-0">{children}</main>
-        {!hideFooter && <Footer />}
+        <main className="m-0 p-0">
+          {children}
+        </main>
+        {/* Футер скрывается вручную в самом EditorCanvas */}
+        <Footer />
       </body>
     </html>
   )
