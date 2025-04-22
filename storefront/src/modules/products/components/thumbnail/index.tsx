@@ -1,45 +1,67 @@
-// storefront/src/modules/products/components/product-preview.tsx
+// storefront/src/modules/products/components/thumbnail.tsx
 
-"use client"
-
+import { Container, clx } from "@medusajs/ui"
 import Image from "next/image"
-import { Text } from "@medusajs/ui"
-import LocalizedClientLink from "@modules/common/components/localized-client-link"
-import { HttpTypes } from "@medusajs/types"
+import React from "react"
 
-export default function ProductPreview({
-  product,
-  isFeatured,
-  region,
-}: {
-  product: HttpTypes.StoreProduct
+import PlaceholderImage from "@modules/common/icons/placeholder-image"
+
+type ThumbnailProps = {
+  thumbnail?: string | null
+  images?: any[] | null
+  size?: "small" | "medium" | "large" | "full" | "square"
   isFeatured?: boolean
-  region: HttpTypes.StoreRegion
-}) {
-  const price = product.variants?.[0]?.prices?.[0]?.amount
+  className?: string
+  "data-testid"?: string
+}
+
+const Thumbnail: React.FC<ThumbnailProps> = ({
+  thumbnail,
+  images,
+  size = "small",
+  isFeatured,
+  className,
+  "data-testid": dataTestid,
+}) => {
+  const initialImage = thumbnail || images?.[0]?.url
 
   return (
-    <LocalizedClientLink href={`/products/${product.handle}`} className="group">
-      <div data-testid="product-wrapper">
-        <div className="relative w-full overflow-hidden bg-white aspect-[9/13.5]">
-          <Image
-            src={product.thumbnail || "/placeholder.png"}
-            alt={product.title}
-            fill
-            sizes="(max-width: 576px) 100vw, (max-width: 768px) 50vw, 25vw"
-            quality={90}
-            className="object-contain object-center transition-transform duration-300 ease-in-out group-hover:scale-105"
-          />
-        </div>
-        <div className="flex txt-compact-medium mt-2 justify-between px-1">
-          <Text className="text-ui-fg-subtle text-sm sm:text-base" data-testid="product-title">
-            {product.title}
-          </Text>
-          <div className="flex items-center gap-x-1 text-sm sm:text-base">
-            {price && <span>{region.currency_code.toUpperCase()} {price / 100}</span>}
-          </div>
-        </div>
-      </div>
-    </LocalizedClientLink>
+    <Container
+      className={clx(
+        "relative w-full overflow-hidden bg-ui-bg-subtle shadow-elevation-card-rest group-hover:shadow-elevation-card-hover transition-shadow ease-in-out duration-150",
+        className,
+        {
+          "aspect-[11/14]": isFeatured,
+          "aspect-[9/13.5]": !isFeatured && size !== "square",
+          "aspect-[1/1]": size === "square",
+        }
+      )}
+      data-testid={dataTestid}
+    >
+      <ImageOrPlaceholder image={initialImage} size={size} />
+    </Container>
   )
 }
+
+const ImageOrPlaceholder = ({
+  image,
+  size,
+}: Pick<ThumbnailProps, "size"> & { image?: string }) => {
+  return image ? (
+    <Image
+      src={image}
+      alt="Thumbnail"
+      className="absolute inset-0 object-contain object-center transition-transform duration-300 ease-in-out group-hover:scale-105"
+      draggable={false}
+      quality={90}
+      sizes="(max-width: 576px) 100vw, (max-width: 768px) 50vw, 25vw"
+      fill
+    />
+  ) : (
+    <div className="w-full h-full absolute inset-0 flex items-center justify-center">
+      <PlaceholderImage size={size === "small" ? 16 : 24} />
+    </div>
+  )
+}
+
+export default Thumbnail
