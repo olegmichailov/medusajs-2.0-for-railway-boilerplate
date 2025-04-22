@@ -1,3 +1,4 @@
+// src/modules/darkroom/EditorCanvas.tsx
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -6,6 +7,8 @@ import useImage from "use-image";
 
 const CANVAS_WIDTH = 985;
 const CANVAS_HEIGHT = 1271;
+const DISPLAY_HEIGHT = 750;
+const DISPLAY_WIDTH = (DISPLAY_HEIGHT * CANVAS_WIDTH) / CANVAS_HEIGHT;
 
 const EditorCanvas = () => {
   const [images, setImages] = useState<any[]>([]);
@@ -26,9 +29,6 @@ const EditorCanvas = () => {
 
   const transformerRef = useRef<any>(null);
   const stageRef = useRef<any>(null);
-
-  const DISPLAY_HEIGHT = typeof window !== "undefined" ? window.innerHeight - 60 : 750;
-  const DISPLAY_WIDTH = (DISPLAY_HEIGHT * CANVAS_WIDTH) / CANVAS_HEIGHT;
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -122,16 +122,12 @@ const EditorCanvas = () => {
 
   return (
     <div className="relative w-screen h-screen bg-white overflow-hidden">
-      {/* Floating Mobile Menu */}
       {showMenu && (
         <div className="absolute top-0 left-0 w-full bg-white z-10 p-4 flex flex-wrap gap-2 justify-center">
           <button onClick={() => setShowMenu(false)} className="absolute right-4 top-4">✕</button>
-          <button onClick={() => setMockupType("front")}>Front</button>
-          <button onClick={() => setMockupType("back")}>Back</button>
-          <button onClick={() => setDrawings([])}>Clear</button>
-          <button onClick={() => setMode("move")}>Move</button>
-          <button onClick={() => setMode("brush")}>Brush</button>
           <input type="file" accept="image/*" onChange={handleFileChange} className="text-sm" />
+          <input type="color" value={brushColor} onChange={(e) => setBrushColor(e.target.value)} />
+          <input type="range" min="1" max="30" value={brushSize} onChange={(e) => setBrushSize(Number(e.target.value))} />
           <input type="range" min="0" max="1" step="0.01" value={opacity} onChange={(e) => {
             setOpacity(Number(e.target.value));
             if (selectedImageIndex !== null) {
@@ -140,8 +136,11 @@ const EditorCanvas = () => {
               setImages(newImages);
             }
           }} />
-          <input type="range" min="1" max="30" value={brushSize} onChange={(e) => setBrushSize(Number(e.target.value))} />
-          <input type="color" value={brushColor} onChange={(e) => setBrushColor(e.target.value)} />
+          <button onClick={() => setMockupType("front")}>Front</button>
+          <button onClick={() => setMockupType("back")}>Back</button>
+          <button onClick={() => setDrawings([])}>Clear</button>
+          <button onClick={() => setMode("move")}>Move</button>
+          <button onClick={() => setMode("brush")}>Brush</button>
           <button onClick={() => {
             const uri = stageRef.current.toDataURL({ pixelRatio: 2 });
             const a = document.createElement("a");
@@ -169,11 +168,8 @@ const EditorCanvas = () => {
             scale={{ x: DISPLAY_WIDTH / CANVAS_WIDTH, y: DISPLAY_HEIGHT / CANVAS_HEIGHT }}
             ref={stageRef}
             onMouseDown={handleMouseDown}
-            onTouchStart={handleMouseDown}
-            onMouseMove={handleMouseMove}
-            onTouchMove={handleMouseMove}
-            onMouseUp={handleMouseUp}
-            onTouchEnd={handleMouseUp}
+            onMousemove={handleMouseMove}
+            onMouseup={handleMouseUp}
           >
             <Layer>
               {mockupImage && (
@@ -190,7 +186,7 @@ const EditorCanvas = () => {
                   height={img.height}
                   rotation={img.rotation}
                   opacity={img.opacity}
-                  draggable={mode === "move"}
+                  draggable
                   onClick={() => setSelectedImageIndex(index)}
                   onTap={() => setSelectedImageIndex(index)}
                 />
@@ -206,7 +202,7 @@ const EditorCanvas = () => {
                   globalCompositeOperation="source-over"
                 />
               ))}
-              {selectedImageIndex !== null && mode === "move" && <Transformer ref={transformerRef} rotateEnabled={true} />}
+              {selectedImageIndex !== null && <Transformer ref={transformerRef} rotateEnabled={true} />}
             </Layer>
           </Stage>
         </div>
