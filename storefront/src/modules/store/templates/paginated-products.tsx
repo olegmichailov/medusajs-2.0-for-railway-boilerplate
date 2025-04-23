@@ -1,10 +1,9 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef, useCallback } from "react"
 import { getProductsListWithSort } from "@lib/data/products"
 import { getRegion } from "@lib/data/regions"
 import ProductPreview from "@modules/products/components/product-preview"
-import { Pagination } from "@modules/store/components/pagination"
 import { SortOptions } from "@modules/store/components/refinement-list/sort-products"
 
 const PRODUCT_LIMIT = 12
@@ -14,6 +13,7 @@ const columnOptionsDesktop = [1, 2, 3, 4]
 
 type PaginatedProductsParams = {
   limit: number
+  offset?: number
   collection_id?: string[]
   category_id?: string[]
   id?: string[]
@@ -22,14 +22,12 @@ type PaginatedProductsParams = {
 
 export default function PaginatedProducts({
   sortBy,
-  page,
   collectionId,
   categoryId,
   productsIds,
   countryCode,
 }: {
   sortBy?: SortOptions
-  page: number
   collectionId?: string
   categoryId?: string
   productsIds?: string[]
@@ -38,7 +36,9 @@ export default function PaginatedProducts({
   const [columns, setColumns] = useState<number | null>(null)
   const [products, setProducts] = useState<any[]>([])
   const [region, setRegion] = useState<any>(null)
-  const [count, setCount] = useState(0)
+  const [offset, setOffset] = useState(0)
+  const [hasMore, setHasMore] = useState(true)
+  const loader = useRef(null)
 
   const columnOptions = typeof window !== "undefined" && window.innerWidth < 640
     ? columnOptionsMobile
@@ -50,34 +50,53 @@ export default function PaginatedProducts({
   }, [])
 
   useEffect(() => {
-    const fetchData = async () => {
-      const queryParams: PaginatedProductsParams = {
-        limit: PRODUCT_LIMIT,
-      }
-
-      if (collectionId) queryParams["collection_id"] = [collectionId]
-      if (categoryId) queryParams["category_id"] = [categoryId]
-      if (productsIds) queryParams["id"] = productsIds
-      if (sortBy === "created_at") queryParams["order"] = "created_at"
-
+    const fetchInitial = async () => {
       const regionData = await getRegion(countryCode)
       if (!regionData) return
       setRegion(regionData)
+      setOffset(0)
+      setProducts([])
+      setHasMore(true)
+    }
+    fetchInitial()
+  }, [sortBy, collectionId, categoryId, productsIds, countryCode])
 
-      const {
-        response: { products, count },
-      } = await getProductsListWithSort({ page, queryParams, sortBy, countryCode })
-
-      setProducts(products)
-      setCount(count)
+  const fetchMore = useCallback(async () => {
+    const queryParams: PaginatedProductsParams = {
+      limit: PRODUCT_LIMIT,
+      offset,
     }
 
-    fetchData()
-  }, [sortBy, page, collectionId, categoryId, productsIds, countryCode])
+    if (collectionId) queryParams["collection_id"] = [collectionId]
+    if (categoryId) queryParams["category_id"] = [categoryId]
+    if (productsIds) queryParams["id"] = productsIds
+    if (sortBy === "created_at") queryParams["order"] = "created_at"
+
+    const {
+      response: { products: newProducts },
+    } = await getProductsListWithSort({ page: 1, queryParams, sortBy, countryCode })
+
+    if (newProducts.length < PRODUCT_LIMIT) setHasMore(false)
+    setProducts((prev) => [...prev, ...newProducts])
+    setOffset((prev) => prev + PRODUCT_LIMIT)
+  }, [offset, sortBy, collectionId, categoryId, productsIds, countryCode])
+
+  useEffect(() => {
+    if (!region || !hasMore) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) fetchMore()
+      },
+      { threshold: 1.0 }
+    )
+    if (loader.current) observer.observe(loader.current)
+    return () => {
+      if (loader.current) observer.unobserve(loader.current)
+    }
+  }, [fetchMore, region, hasMore])
 
   if (columns === null) return null
-
-  const totalPages = Math.ceil(count / PRODUCT_LIMIT)
 
   const gridColsClass =
     columns === 1
@@ -90,10 +109,8 @@ export default function PaginatedProducts({
 
   return (
     <>
-      <div className="pt-4 pb-2 flex items-center justify-between sm:px-0 px-4">
-        <div className="text-sm sm:text-base font-medium tracking-wide uppercase">
-          {/* Динамический заголовок будет здесь от другого компонента */}
-        </div>
+      <div className="px-4 sm:px-6 pt-4 pb-2 flex items-center justify-between">
+        <div className="text-sm sm:text-base font-medium tracking-wide uppercase"></div>
         <div className="flex gap-1 ml-auto">
           {columnOptions.map((col) => (
             <button
@@ -116,19 +133,13 @@ export default function PaginatedProducts({
         data-testid="products-list"
       >
         {products.map((p) => (
-          <li key={p.id} className="w-full">
+          <li key={p.id}>
             <ProductPreview product={p} region={region} />
           </li>
         ))}
       </ul>
 
-      {totalPages > 1 && (
-        <Pagination
-          data-testid="product-pagination"
-          page={page}
-          totalPages={totalPages}
-        />
-      )}
+      {hasMore && <div ref={loader} className="h-10 mt-10" />}
     </>
   )
 }
