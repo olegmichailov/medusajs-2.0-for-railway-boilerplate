@@ -9,7 +9,7 @@ import { SortOptions } from "@modules/store/components/refinement-list/sort-prod
 
 const PRODUCT_LIMIT = 12
 
-const columnOptionsMobile = [1]
+const columnOptionsMobile = [1, 2]
 const columnOptionsDesktop = [1, 2, 3, 4]
 
 type PaginatedProductsParams = {
@@ -90,7 +90,7 @@ export default function PaginatedProducts({
 
   return (
     <>
-      <div className="px-6 sm:px-6 pt-4 pb-2 flex items-center justify-between">
+      <div className="pt-4 pb-2 flex items-center justify-between sm:px-0 px-4">
         <div className="text-sm sm:text-base font-medium tracking-wide uppercase">
           {/* Динамический заголовок будет здесь от другого компонента */}
         </div>
@@ -112,11 +112,11 @@ export default function PaginatedProducts({
       </div>
 
       <ul
-        className={`grid ${gridColsClass} gap-x-6 gap-y-10 px-6 sm:px-6`}
+        className={`grid ${gridColsClass} gap-x-4 gap-y-10 px-4 sm:px-0`}
         data-testid="products-list"
       >
         {products.map((p) => (
-          <li key={p.id}>
+          <li key={p.id} className="w-full">
             <ProductPreview product={p} region={region} />
           </li>
         ))}
