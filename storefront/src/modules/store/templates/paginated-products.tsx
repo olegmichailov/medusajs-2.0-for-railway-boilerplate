@@ -11,15 +11,6 @@ const PRODUCT_LIMIT = 12
 const columnOptionsMobile = [1, 2]
 const columnOptionsDesktop = [1, 2, 3, 4]
 
-type PaginatedProductsParams = {
-  limit: number
-  offset?: number
-  collection_id?: string[]
-  category_id?: string[]
-  id?: string[]
-  order?: string
-}
-
 export default function PaginatedProducts({
   sortBy,
   collectionId,
@@ -33,7 +24,7 @@ export default function PaginatedProducts({
   productsIds?: string[]
   countryCode: string
 }) {
-  const [columns, setColumns] = useState<number | null>(null)
+  const [columns, setColumns] = useState<number>(2)
   const [products, setProducts] = useState<any[]>([])
   const [region, setRegion] = useState<any>(null)
   const [offset, setOffset] = useState(0)
@@ -55,10 +46,10 @@ export default function PaginatedProducts({
       if (!regionData) return
       setRegion(regionData)
 
-      const queryParams: PaginatedProductsParams = {
+      const queryParams = {
         limit: PRODUCT_LIMIT,
         offset: 0,
-      }
+      } as any
 
       if (collectionId) queryParams["collection_id"] = [collectionId]
       if (categoryId) queryParams["category_id"] = [categoryId]
@@ -77,10 +68,10 @@ export default function PaginatedProducts({
   }, [sortBy, collectionId, categoryId, productsIds, countryCode])
 
   const fetchMore = useCallback(async () => {
-    const queryParams: PaginatedProductsParams = {
+    const queryParams = {
       limit: PRODUCT_LIMIT,
       offset,
-    }
+    } as any
 
     if (collectionId) queryParams["collection_id"] = [collectionId]
     if (categoryId) queryParams["category_id"] = [categoryId]
@@ -110,8 +101,6 @@ export default function PaginatedProducts({
       if (loader.current) observer.unobserve(loader.current)
     }
   }, [fetchMore, region, hasMore])
-
-  if (columns === null) return null
 
   const gridColsClass =
     columns === 1
