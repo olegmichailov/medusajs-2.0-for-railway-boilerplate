@@ -3,9 +3,9 @@
 import { Container, clx } from "@medusajs/ui"
 import Image from "next/image"
 import React from "react"
-
 import PlaceholderImage from "@modules/common/icons/placeholder-image"
 
+// Тип пропсов для компонента превью
 type ThumbnailProps = {
   thumbnail?: string | null
   images?: any[] | null
@@ -31,7 +31,7 @@ const Thumbnail: React.FC<ThumbnailProps> = ({
         "relative w-full overflow-hidden bg-ui-bg-subtle shadow-elevation-card-rest transition-shadow duration-300 group",
         className,
         {
-          "aspect-[3/4] sm:aspect-[9/13.5]": !isFeatured && size !== "square",
+          "aspect-[3/4]": !isFeatured && size !== "square",
           "aspect-[11/14]": isFeatured,
           "aspect-[1/1]": size === "square",
         }
@@ -51,12 +51,15 @@ const ImageOrPlaceholder = ({
     <Image
       src={image}
       alt="Thumbnail"
-      className="absolute inset-0 object-cover object-center transition-transform duration-[1400ms] ease-[cubic-bezier(0.2,0.1,0.2,1)] group-hover:scale-[1.015]"
+      className="absolute inset-0 object-cover object-center transition-transform duration-[1200ms] ease-[cubic-bezier(0.25,0.1,0.25,1)] group-hover:scale-[1.015]"
       draggable={false}
-      quality={90}
-      sizes="(max-width: 576px) 100vw, (max-width: 768px) 50vw, 25vw"
+      quality={75} // компромисс между качеством и скоростью
+      priority={false} // включить прелоудинг только для первого экрана (через loading="eager" отдельно если надо)
+      loading="lazy"
+      placeholder="blur"
+      blurDataURL="/placeholder.png" // заглушка
+      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
       fill
-      priority={false}
     />
   ) : (
     <div className="w-full h-full absolute inset-0 flex items-center justify-center">
