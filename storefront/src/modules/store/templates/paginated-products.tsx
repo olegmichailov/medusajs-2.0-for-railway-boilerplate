@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useRef, useCallback } from "react"
+import { useLayoutEffect, useState, useRef, useCallback, useEffect } from "react"
 import { getProductsListWithSort } from "@lib/data/products"
 import { getRegion } from "@lib/data/regions"
 import ProductPreview from "@modules/products/components/product-preview"
@@ -44,7 +44,7 @@ export default function PaginatedProducts({
     ? columnOptionsMobile
     : columnOptionsDesktop
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const isMobile = window.innerWidth < 640
     setColumns(isMobile ? 1 : 2)
   }, [])
@@ -132,9 +132,9 @@ export default function PaginatedProducts({
         className={`grid ${gridColsClass} gap-x-4 gap-y-10 px-4 sm:px-0`}
         data-testid="products-list"
       >
-        {products.map((p) => (
+        {products.map((p, i) => (
           <li key={p.id}>
-            <ProductPreview product={p} region={region} />
+            <ProductPreview product={p} region={region} index={i} />
           </li>
         ))}
       </ul>
