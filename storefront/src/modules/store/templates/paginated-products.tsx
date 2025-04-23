@@ -54,9 +54,24 @@ export default function PaginatedProducts({
       const regionData = await getRegion(countryCode)
       if (!regionData) return
       setRegion(regionData)
-      setOffset(0)
-      setProducts([])
-      setHasMore(true)
+
+      const queryParams: PaginatedProductsParams = {
+        limit: PRODUCT_LIMIT,
+        offset: 0,
+      }
+
+      if (collectionId) queryParams["collection_id"] = [collectionId]
+      if (categoryId) queryParams["category_id"] = [categoryId]
+      if (productsIds) queryParams["id"] = productsIds
+      if (sortBy === "created_at") queryParams["order"] = "created_at"
+
+      const {
+        response: { products: newProducts },
+      } = await getProductsListWithSort({ page: 1, queryParams, sortBy, countryCode })
+
+      setProducts(newProducts)
+      setOffset(PRODUCT_LIMIT)
+      setHasMore(newProducts.length >= PRODUCT_LIMIT)
     }
     fetchInitial()
   }, [sortBy, collectionId, categoryId, productsIds, countryCode])
