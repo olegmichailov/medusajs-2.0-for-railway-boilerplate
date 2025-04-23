@@ -1,5 +1,4 @@
 const checkEnvVariables = require("./check-env-variables")
-
 checkEnvVariables()
 
 /**
@@ -14,7 +13,8 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   images: {
-    formats: ['image/avif', 'image/webp'],
+    loader: "default", // ⬅️ ОБЯЗАТЕЛЬНО! используем встроенный оптимизатор (sharp)
+    formats: ["image/avif", "image/webp"], // современные форматы
     remotePatterns: [
       {
         protocol: "http",
@@ -45,6 +45,8 @@ const nextConfig = {
           ]
         : []),
     ],
+    minimumCacheTTL: 60, // 🔁 кэш на 60 сек, можно поднять до 600+
+    deviceSizes: [360, 640, 768, 1024, 1280, 1440, 1920], // ⚙️ адаптивные размеры
   },
   serverRuntimeConfig: {
     port: process.env.PORT || 3000,
@@ -53,11 +55,11 @@ const nextConfig = {
     if (isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,
-        canvas: false,
+        canvas: false, // отключаем canvas, если не нужен
       };
     }
     return config;
   },
-};
+}
 
-module.exports = nextConfig;
+module.exports = nextConfig
