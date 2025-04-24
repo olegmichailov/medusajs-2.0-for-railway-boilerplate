@@ -13,11 +13,10 @@
     "medusa"
   ],
   "scripts": {
-    "build": "medusa build && node src/scripts/postBuild.js",
-    "seed": "medusa exec ./src/scripts/seed.ts",
+    "build": "medusa build",
     "start": "medusa start --verbose",
     "dev": "medusa develop",
-    "email:dev": "email dev --dir=./src/modules/email-notifications/templates --port=3002",
+    "seed": "medusa exec ./src/scripts/seed.ts",
     "db:diagnostic": "node src/scripts/db-diagnostic.js"
   },
   "dependencies": {
