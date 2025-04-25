@@ -45,31 +45,33 @@ const medusaConfig = {
     disable: SHOULD_DISABLE_ADMIN,
   },
   modules: [
-    {
-      key: Modules.FILE,
-      resolve: '@medusajs/file',
-      options: {
-        providers: [
-          ...(MINIO_ENDPOINT && MINIO_ACCESS_KEY && MINIO_SECRET_KEY ? [{
-            resolve: './src/modules/minio-file',
-            id: 'minio',
-            options: {
-              endPoint: MINIO_ENDPOINT,
-              accessKey: MINIO_ACCESS_KEY,
-              secretKey: MINIO_SECRET_KEY,
-              bucket: MINIO_BUCKET // Optional, default: medusa-media
-            }
-          }] : [{
-            resolve: '@medusajs/file-local',
-            id: 'local',
-            options: {
-              upload_dir: 'static',
-              backend_url: `${BACKEND_URL}/static`
-            }
-          }])
-        ]
-      }
-    },
+    // ❌ Временно отключен MinIO
+    // {
+    //   key: Modules.FILE,
+    //   resolve: '@medusajs/file',
+    //   options: {
+    //     providers: [
+    //       ...(MINIO_ENDPOINT && MINIO_ACCESS_KEY && MINIO_SECRET_KEY ? [{
+    //         resolve: './src/modules/minio-file',
+    //         id: 'minio',
+    //         options: {
+    //           endPoint: MINIO_ENDPOINT,
+    //           accessKey: MINIO_ACCESS_KEY,
+    //           secretKey: MINIO_SECRET_KEY,
+    //           bucket: MINIO_BUCKET
+    //         }
+    //       }] : [{
+    //         resolve: '@medusajs/file-local',
+    //         id: 'local',
+    //         options: {
+    //           upload_dir: 'static',
+    //           backend_url: `${BACKEND_URL}/static`
+    //         }
+    //       }])
+    //     ]
+    //   }
+    // },
+
     ...(REDIS_URL ? [{
       key: Modules.EVENT_BUS,
       resolve: '@medusajs/event-bus-redis',
@@ -86,6 +88,7 @@ const medusaConfig = {
         }
       }
     }] : []),
+
     ...(SENDGRID_API_KEY && SENDGRID_FROM_EMAIL || RESEND_API_KEY && RESEND_FROM_EMAIL ? [{
       key: Modules.NOTIFICATION,
       resolve: '@medusajs/notification',
@@ -112,6 +115,7 @@ const medusaConfig = {
         ]
       }
     }] : []),
+
     ...(STRIPE_API_KEY && STRIPE_WEBHOOK_SECRET ? [{
       key: Modules.PAYMENT,
       resolve: '@medusajs/payment',
@@ -128,6 +132,7 @@ const medusaConfig = {
         ],
       },
     }] : []),
+
     ...(MEILISEARCH_HOST && MEILISEARCH_API_KEY ? [{
       resolve: '@rokmohar/medusa-plugin-meilisearch',
       options: {
