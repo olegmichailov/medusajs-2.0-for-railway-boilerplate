@@ -1,6 +1,6 @@
 import { AbstractFileProviderService, MedusaError } from '@medusajs/utils';
 import { Logger } from '@medusajs/types';
-import { 
+import {
   ProviderUploadFileDTO,
   ProviderDeleteFileDTO,
   ProviderFileResultDTO,
@@ -54,11 +54,11 @@ class MinioFileProviderService extends AbstractFileProviderService {
     this.bucket = this.config_.bucket || DEFAULT_BUCKET
     this.logger_.info(`MinIO service initialized with bucket: ${this.bucket}`)
 
-    // Initialize Minio client with hardcoded SSL settings
+    // Correct MinIO client configuration for Railway
     this.client = new Client({
       endPoint: this.config_.endPoint,
-      port: 443,
-      useSSL: true,
+      port: 9000,
+      useSSL: false,
       accessKey: this.config_.accessKey,
       secretKey: this.config_.secretKey
     })
@@ -88,15 +88,12 @@ class MinioFileProviderService extends AbstractFileProviderService {
 
   private async initializeBucket(): Promise<void> {
     try {
-      // Check if bucket exists
       const bucketExists = await this.client.bucketExists(this.bucket)
-      
+
       if (!bucketExists) {
-        // Create the bucket
         await this.client.makeBucket(this.bucket)
         this.logger_.info(`Created bucket: ${this.bucket}`)
 
-        // Set bucket policy to allow public read access
         const policy = {
           Version: '2012-10-17',
           Statement: [
@@ -114,8 +111,7 @@ class MinioFileProviderService extends AbstractFileProviderService {
         this.logger_.info(`Set public read policy for bucket: ${this.bucket}`)
       } else {
         this.logger_.info(`Using existing bucket: ${this.bucket}`)
-        
-        // Verify/update policy on existing bucket
+
         try {
           const policy = {
             Version: '2012-10-17',
@@ -163,7 +159,6 @@ class MinioFileProviderService extends AbstractFileProviderService {
       const fileKey = `${parsedFilename.name}-${ulid()}${parsedFilename.ext}`
       const content = Buffer.from(file.content, 'binary')
 
-      // Upload file with public-read access
       await this.client.putObject(
         this.bucket,
         fileKey,
@@ -171,13 +166,11 @@ class MinioFileProviderService extends AbstractFileProviderService {
         content.length,
         {
           'Content-Type': file.mimeType,
-          'x-amz-meta-original-filename': file.filename,
-          'x-amz-acl': 'public-read'
+          'x-amz-meta-original-filename': file.filename
         }
       )
 
-      // Generate URL using the endpoint and bucket
-      const url = `https://${this.config_.endPoint}/${this.bucket}/${fileKey}`
+      const url = `http://${this.config_.endPoint}/${this.bucket}/${fileKey}`
 
       this.logger_.info(`Successfully uploaded file ${fileKey} to MinIO bucket ${this.bucket}`)
 
@@ -208,7 +201,6 @@ class MinioFileProviderService extends AbstractFileProviderService {
       await this.client.removeObject(this.bucket, fileData.fileKey)
       this.logger_.info(`Successfully deleted file ${fileData.fileKey} from MinIO bucket ${this.bucket}`)
     } catch (error) {
-      // Log error but don't throw if file doesn't exist
       this.logger_.warn(`Failed to delete file ${fileData.fileKey}: ${error.message}`)
     }
   }
@@ -227,7 +219,7 @@ class MinioFileProviderService extends AbstractFileProviderService {
       const url = await this.client.presignedGetObject(
         this.bucket,
         fileData.fileKey,
-        24 * 60 * 60 // URL expires in 24 hours
+        24 * 60 * 60
       )
       this.logger_.info(`Generated presigned URL for file ${fileData.fileKey}`)
       return url
