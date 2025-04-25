@@ -14,7 +14,7 @@
   ],
   "scripts": {
     "build": "medusa build",
-    "start": "medusa start --verbose",
+    "start": "node .medusa/server/dist/main.js",
     "dev": "medusa develop",
     "seed": "medusa exec ./src/scripts/seed.ts",
     "db:diagnostic": "node src/scripts/db-diagnostic.js"
