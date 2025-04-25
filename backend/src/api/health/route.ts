@@ -1,8 +1,8 @@
-import type { MedusaRequest, MedusaResponse } from "@medusajs/types"
+import type { ModulesRequest, ModulesResponse } from "@medusajs/types";
 
 export async function GET(
-  req: MedusaRequest,
-  res: MedusaResponse
+  req: ModulesRequest,
+  res: ModulesResponse
 ): Promise<void> {
-  res.status(200).json({ status: "ok" })
+  res.status(200).json({ status: "ok" });
 }
