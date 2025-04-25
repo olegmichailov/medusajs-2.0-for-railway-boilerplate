@@ -1,8 +1,5 @@
-import type { ModulesRequest, ModulesResponse } from "@medusajs/types";
+import { Request, Response } from "express";
 
-export async function GET(
-  req: ModulesRequest,
-  res: ModulesResponse
-): Promise<void> {
+export async function GET(req: Request, res: Response): Promise<void> {
   res.status(200).json({ status: "ok" });
 }
